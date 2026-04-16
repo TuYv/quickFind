@@ -51,6 +51,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('Failed to initialize theme manager:', error);
   }
 
+  // 主题切换按钮
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    const themeLabels = { system: 'Auto (System)', light: 'Light Mode', dark: 'Dark Mode' };
+    const themeOrder = ['system', 'light', 'dark'];
+    try {
+      const tResult = await chrome.storage.sync.get(['theme']);
+      const initTheme = tResult.theme || 'system';
+      themeToggle.setAttribute('data-p', initTheme);
+      themeToggle.title = themeLabels[initTheme] || 'Auto (System)';
+    } catch (e) {
+      themeToggle.setAttribute('data-p', 'system');
+    }
+    themeToggle.addEventListener('click', async () => {
+      const cur = themeToggle.getAttribute('data-p') || 'system';
+      const next = themeOrder[(themeOrder.indexOf(cur) + 1) % themeOrder.length];
+      themeToggle.setAttribute('data-p', next);
+      themeToggle.title = themeLabels[next];
+      if (themeManager) await themeManager.setTheme(next);
+    });
+
+    // 监听设置页面的主题变更，实时同步按钮状态
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'sync' && changes.theme) {
+        const newTheme = changes.theme.newValue || 'system';
+        themeToggle.setAttribute('data-p', newTheme);
+        themeToggle.title = themeLabels[newTheme] || 'Auto (System)';
+      }
+    });
+  }
+
   // 动态设置版本号
   try {
     const manifestData = chrome.runtime.getManifest();

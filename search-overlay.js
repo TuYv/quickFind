@@ -574,6 +574,7 @@
           await chrome.runtime.sendMessage({
             action: 'switchToTab',
             tabId: item.id,
+            url: item.url,
             bridgeTabId: this.bridgeTabId
           });
         } else {

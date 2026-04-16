@@ -69,6 +69,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       ? chrome.tabs.remove(request.bridgeTabId).catch(() => {})
       : Promise.resolve();
     maybeCloseBridge.then(() => doSwitch())
+      .catch((error) => {
+        // Tab may have been closed since search data was fetched; fall back to opening URL
+        if (request.url && error.message && error.message.includes('No tab with id')) {
+          return chrome.tabs.create({ url: request.url, active: true });
+        }
+        throw error;
+      })
       .then(() => {
         sendResponse({ success: true });
       })

@@ -331,19 +331,22 @@ document.addEventListener('DOMContentLoaded', () => {
   async function initThemeManager() {
     try {
       themeManager = new ThemeManager();
-      
-      // 设置当前选中的主题
-      themeSelect.value = themeManager.getCurrentTheme();
-      
+
+      // 直接从 storage 读取已保存主题，避免 ThemeManager async init 未完成时 getCurrentTheme() 返回默认值
+      const { theme: savedTheme } = await chrome.storage.sync.get(['theme']);
+      themeSelect.value = savedTheme || 'system';
+
       // 监听主题选择变化
       themeSelect.addEventListener('change', async (e) => {
         await themeManager.setTheme(e.target.value);
         showSuccess('Theme updated successfully');
       });
-      
-      // 监听来自其他页面的主题变更
-      themeManager.onThemeChanged((theme) => {
-        themeSelect.value = theme;
+
+      // 监听来自其他页面的主题变更（storage onChanged 比消息传递更可靠）
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === 'sync' && changes.theme) {
+          themeSelect.value = changes.theme.newValue || 'system';
+        }
       });
       
     } catch (error) {

@@ -8,7 +8,7 @@ A Chrome extension that lets you instantly search open tabs, bookmarks, history,
 - **Unified search** — searches across open tabs, bookmarks, browser history, and top sites simultaneously
 - **Batch open URLs** — save a list of URLs and open them all at once with `⌘⇧U` / `Ctrl+Shift+U`
 - **Keyboard-first navigation** — `↑↓` to move, `Enter` to jump, `Esc` to close
-- **Theme support** — Light, Dark, or Follow System
+- **Theme toggle in popup** — switch Light / Dark / System directly from the popup header; syncs in real-time with the settings page
 
 ## Keyboard Shortcuts
 
@@ -69,6 +69,20 @@ No build step required. Edit source files directly.
 | `activeTab` | Access the current tab when triggered |
 | `notifications` | (Reserved for future use) |
 
-## Version
+## License
 
-**1.2.0** — Manifest V3, Chrome 88+
+MIT — see [LICENSE](LICENSE)
+
+## Changelog
+
+### 1.3.1
+- **feat:** theme toggle button in popup header (☀️ Light / 🌙 Dark / ⊙ System), syncs in real-time with settings page
+- **fix:** tab switching now falls back to opening a new tab when the target tab was closed since the search data was fetched
+- **fix:** popup and settings page theme now stay in sync when both are open simultaneously (switched to `chrome.storage.onChanged` for reliable cross-page sync)
+- **fix:** settings page theme radio always showed "System" on first open regardless of saved preference
+
+### 1.3.0
+- Search overlay UI and icon improvements
+
+### 1.2.0
+- Initial release — Manifest V3, Chrome 88+
