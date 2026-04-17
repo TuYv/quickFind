@@ -232,13 +232,13 @@ document.addEventListener('DOMContentLoaded', async () => {
          target: { tabId: activeTab.id },
          func: () => {
            // 检查搜索覆盖层是否已存在
-           if (window.quickFindSearchOverlay) {
-             window.quickFindSearchOverlay.show();
+           if (window.pounceSearchOverlay) {
+             window.pounceSearchOverlay.show();
            } else {
              // 如果还没有初始化，等待一下再试
              setTimeout(() => {
-               if (window.quickFindSearchOverlay) {
-                 window.quickFindSearchOverlay.show();
+               if (window.pounceSearchOverlay) {
+                 window.pounceSearchOverlay.show();
                } else {
                  alert('Search function initialization failed, please try again');
                }

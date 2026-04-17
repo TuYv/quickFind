@@ -1,7 +1,7 @@
 // 后台脚本 - Service Worker
 // 处理快捷键命令
 chrome.commands.onCommand.addListener((command) => {
-  console.log('QuickFind: Command received:', command);
+  console.log('Pounce: Command received:', command);
   
   if (command === 'open-all-urls') {
     openAllUrls().catch(error => {
@@ -135,7 +135,7 @@ async function openAllUrls() {
       await chrome.notifications.create({
         type: 'basic',
         iconUrl: 'icons/icon48.png',
-        title: 'QuickFind',
+        title: 'Pounce',
         message: 'Please add URLs first before using this feature'
       });
       return;
@@ -152,7 +152,7 @@ async function openAllUrls() {
     await chrome.notifications.create({
       type: 'basic',
       iconUrl: 'icons/icon48.png',
-      title: 'QuickFind',
+      title: 'Pounce',
       message: `Successfully opened ${urls.length} URLs`
     });
     
@@ -163,7 +163,7 @@ async function openAllUrls() {
     await chrome.notifications.create({
       type: 'basic',
       iconUrl: 'icons/icon48.png',
-      title: 'QuickFind - Error',
+      title: 'Pounce -Error',
       message: 'Error occurred while opening URLs, please check URL configuration'
     });
     
@@ -252,7 +252,7 @@ async function fetchHistoryData() {
         typedCount: item.typedCount || 0
       }));
   } catch (error) {
-    console.warn('QuickFind: Unable to read history data', error);
+    console.warn('Pounce: Unable to read history data', error);
     return [];
   }
 }
@@ -298,7 +298,7 @@ async function getTopSitesData() {
         favIconUrl: createFaviconUrl(site.url)
       }));
   } catch (error) {
-    console.warn('QuickFind: Unable to read top sites', error);
+    console.warn('Pounce: Unable to read top sites', error);
     return [];
   }
 }
@@ -306,7 +306,7 @@ async function getTopSitesData() {
 // 获取搜索数据（标签页、书签、历史和常用网站）
 async function getSearchData() {
   try {
-    console.log('QuickFind: Starting to get search data...');
+    console.log('Pounce: Starting to get search data...');
 
     const [tabsData, bookmarksData, historyData, topSitesData] = await Promise.all([
       getTabsData(),
@@ -317,7 +317,7 @@ async function getSearchData() {
 
     const allData = [...tabsData, ...bookmarksData, ...historyData, ...topSitesData];
 
-    console.log('QuickFind: Search data ready', {
+    console.log('Pounce: Search data ready', {
       tabs: tabsData.length,
       bookmarks: bookmarksData.length,
       history: historyData.length,
@@ -327,7 +327,7 @@ async function getSearchData() {
 
     return allData;
   } catch (error) {
-    console.error('QuickFind: Error getting search data:', error);
+    console.error('Pounce: Error getting search data:', error);
     throw error;
   }
 }
@@ -365,7 +365,7 @@ async function showSearchOverlay() {
 
   // chrome:// 等受保护页面无法注入 content script，新开 google.com 作为跳板页
   if (isProtectedUrl(activeTab.url)) {
-    console.debug('QuickFind: Protected URL, opening bridge tab:', activeTab.url);
+    console.debug('Pounce: Protected URL, opening bridge tab:', activeTab.url);
     const bridgeTab = await chrome.tabs.create({ url: chrome.runtime.getURL('bridge.html'), active: true });
     if (bridgeTab.status !== 'complete') {
       await new Promise((resolve) => {
@@ -393,7 +393,7 @@ async function showSearchOverlay() {
     await requestOverlayShow(activeTab.id);
     return;
   } catch (error) {
-    console.debug('QuickFind: Content script not ready, will inject:', error.message);
+    console.debug('Pounce: Content script not ready, will inject:', error.message);
   }
 
   await injectAndShow(activeTab.id, null);
@@ -436,7 +436,7 @@ async function performWebSearch(query, bridgeTabId) {
       await chrome.tabs.create({ url: searchUrl, active: true });
     }
     
-    console.log('QuickFind: Performed web search for:', query);
+    console.log('Pounce: Performed web search for:', query);
     
   } catch (error) {
     console.error('Error performing web search:', error);
@@ -445,7 +445,7 @@ async function performWebSearch(query, bridgeTabId) {
     await chrome.notifications.create({
       type: 'basic',
       iconUrl: 'icons/icon48.png',
-      title: 'QuickFind - Search Error',
+      title: 'Pounce -Search Error',
       message: 'Failed to perform web search'
     });
     
@@ -463,7 +463,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     await chrome.notifications.create({
       type: 'basic',
       iconUrl: 'icons/icon48.png',
-      title: 'QuickFind Installed Successfully',
+      title: 'Pounce Installed Successfully',
       message: `Press ${searchShortcut} to search tabs & bookmarks. Use ${batchShortcut} to batch open URLs.`
     });
     

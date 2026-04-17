@@ -1,13 +1,13 @@
-// QuickFind Search Overlay - Content Script
+// Pounce Search Overlay - Content Script
 (function() {
   'use strict';
   
   // Prevent multiple injections
-  if (window.quickFindSearchOverlay) {
+  if (window.pounceSearchOverlay) {
     return;
   }
   
-  class QuickFindSearchOverlay {
+  class PounceSearchOverlay {
     constructor() {
       this.overlay = null;
       this.searchInput = null;
@@ -40,19 +40,19 @@
     createOverlay() {
       // Create overlay container
       this.overlay = document.createElement('div');
-      this.overlay.className = 'quickfind-search-overlay';
+      this.overlay.className = 'pounce-search-overlay';
       
       // Create search container
       const container = document.createElement('div');
-      container.className = 'quickfind-search-container';
+      container.className = 'pounce-search-container';
       
       // Create search input container (this was missing!)
       const inputContainer = document.createElement('div');
-      inputContainer.className = 'quickfind-search-input-container';
+      inputContainer.className = 'pounce-search-input-container';
       
       // Create search icon — proper currentColor SVG
       const searchIcon = document.createElement('div');
-      searchIcon.className = 'quickfind-search-icon';
+      searchIcon.className = 'pounce-search-icon';
       searchIcon.innerHTML = `
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="11" cy="11" r="7.5" stroke="currentColor" stroke-width="1.75"/>
@@ -62,7 +62,7 @@
       
       // Create search input
       this.searchInput = document.createElement('input');
-      this.searchInput.className = 'quickfind-search-input';
+      this.searchInput.className = 'pounce-search-input';
       this.searchInput.type = 'text';
       this.searchInput.placeholder = 'Search tabs, history, bookmarks, and top sites...';
       this.searchInput.autocomplete = 'off';
@@ -70,8 +70,8 @@
 
       // create close icon — proper currentColor SVG
       const closeIcon = document.createElement('div');
-      closeIcon.className = 'quickfind-close-icon';
-      closeIcon.id = 'quickfind-close-icon';
+      closeIcon.className = 'pounce-close-icon';
+      closeIcon.id = 'pounce-close-icon';
       closeIcon.innerHTML = `
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
@@ -80,28 +80,28 @@
       
       // Create results container
       this.resultsContainer = document.createElement('div');
-      this.resultsContainer.className = 'quickfind-search-results';
+      this.resultsContainer.className = 'pounce-search-results';
 
       // 底部区域
       const bottomContainer = document.createElement('div');
-      bottomContainer.className = 'quickfind-search-bottom';
+      bottomContainer.className = 'pounce-search-bottom';
 
       const leftContainer = document.createElement('div');
-      leftContainer.className = 'quickfind-search-bottom-left';
+      leftContainer.className = 'pounce-search-bottom-left';
       leftContainer.textContent = '0 results';
       this.resultsCounter = leftContainer; // 保存引用以便后续更新
       bottomContainer.appendChild(leftContainer);
       const rightContainer = document.createElement('div');
-      rightContainer.className = 'quickfind-hints';
+      rightContainer.className = 'pounce-hints';
       rightContainer.innerHTML = `
-        <span class="quickfind-hint">
-          <span class="quickfind-hint-key">↑</span><span class="quickfind-hint-key">↓</span> Navigate
+        <span class="pounce-hint">
+          <span class="pounce-hint-key">↑</span><span class="pounce-hint-key">↓</span> Navigate
         </span>
-        <span class="quickfind-hint">
-          <span class="quickfind-hint-key">↵</span> Select
+        <span class="pounce-hint">
+          <span class="pounce-hint-key">↵</span> Select
         </span>
-        <span class="quickfind-hint">
-          <span class="quickfind-hint-key">Esc</span> Close
+        <span class="pounce-hint">
+          <span class="pounce-hint-key">Esc</span> Close
         </span>
       `;
       bottomContainer.appendChild(rightContainer);
@@ -154,7 +154,7 @@
         }
       }, { capture: true });
 
-      document.getElementById('quickfind-close-icon').addEventListener('click', (e) => {
+      document.getElementById('pounce-close-icon').addEventListener('click', (e) => {
         this.hide();
         e.preventDefault();
         e.stopPropagation();
@@ -210,24 +210,24 @@
     
     async loadSearchData() {
       try {
-        console.log('QuickFind: Requesting search data...');
+        console.log('Pounce: Requesting search data...');
         // Request search data from background script
         const response = await chrome.runtime.sendMessage({
           action: 'getSearchData'
         });
         
-        console.log('QuickFind: Received response:', response);
+        console.log('Pounce: Received response:', response);
         
         if (response && response.success) {
           this.allData = response.data;
-          console.log('QuickFind: Loaded data:', this.allData.length, 'items');
+          console.log('Pounce: Loaded data:', this.allData.length, 'items');
           this.handleSearch(this.searchInput.value);
         } else {
-          console.error('QuickFind: Response indicates failure:', response);
+          console.error('Pounce: Response indicates failure:', response);
           this.showError('Failed to load search data: ' + (response?.error || 'Unknown error'));
         }
       } catch (error) {
-        console.error('QuickFind: Error loading search data:', error);
+        console.error('Pounce: Error loading search data:', error);
         this.showError('Failed to load search data: ' + error.message);
       }
     }
@@ -238,8 +238,8 @@
         return;
       }
 
-      if (window.QuickFindSearchUtils && typeof window.QuickFindSearchUtils.rankResults === 'function') {
-        this.currentResults = window.QuickFindSearchUtils.rankResults(this.allData, query, 10);
+      if (window.PounceSearchUtils && typeof window.PounceSearchUtils.rankResults === 'function') {
+        this.currentResults = window.PounceSearchUtils.rankResults(this.allData, query, 10);
       } else {
         this.currentResults = this.getFallbackResults(query);
       }
@@ -427,14 +427,14 @@
     
     createResultElement(item, index) {
       const element = document.createElement('div');
-      element.className = 'quickfind-search-result';
+      element.className = 'pounce-search-result';
       if (index === this.selectedIndex) {
         element.classList.add('selected');
       }
       
       // Icon
       const icon = document.createElement('div');
-      icon.className = `quickfind-result-icon ${item.type}`;
+      icon.className = `pounce-result-icon ${item.type}`;
       
       // Special handling for synthetic options.
       if (item.type === 'search') {
@@ -465,14 +465,14 @@
       
       // Content
       const content = document.createElement('div');
-      content.className = 'quickfind-result-content';
+      content.className = 'pounce-result-content';
       
       const title = document.createElement('div');
-      title.className = 'quickfind-result-title';
+      title.className = 'pounce-result-title';
       title.textContent = item.displayTitle || item.title || 'Untitled';
       
       const url = document.createElement('div');
-      url.className = 'quickfind-result-url';
+      url.className = 'pounce-result-url';
       url.textContent = item.displayUrl || item.url || '';
       
       content.appendChild(title);
@@ -480,7 +480,7 @@
       
       // Badge
       const badge = document.createElement('div');
-      badge.className = `quickfind-result-badge quickfind-result-badge-${item.type}`;
+      badge.className = `pounce-result-badge pounce-result-badge-${item.type}`;
       badge.textContent = item.sourceLabel || '';
       element.appendChild(icon);
       element.appendChild(content);
@@ -539,7 +539,7 @@
     }
     
     updateSelection() {
-      const results = this.resultsContainer.querySelectorAll('.quickfind-search-result');
+      const results = this.resultsContainer.querySelectorAll('.pounce-search-result');
       results.forEach((result, index) => {
         if (index === this.selectedIndex) {
           result.classList.add('selected');
@@ -588,13 +588,13 @@
         
         this.hide();
       } catch (error) {
-        console.error('QuickFind: Error selecting result:', error);
+        console.error('Pounce: Error selecting result:', error);
       }
     }
     
     showLoading() {
       this.resultsContainer.innerHTML = `
-        <div class="quickfind-search-loading">
+        <div class="pounce-search-loading">
           Loading search data...
         </div>
       `;
@@ -606,7 +606,7 @@
     
     showEmpty() {
       this.resultsContainer.innerHTML = `
-        <div class="quickfind-search-empty">
+        <div class="pounce-search-empty">
           No matching tabs, history, bookmarks, or top sites found
         </div>
       `;
@@ -616,7 +616,7 @@
     
     showError(message) {
       this.resultsContainer.innerHTML = `
-        <div class="quickfind-search-empty">
+        <div class="pounce-search-empty">
           ${message}
         </div>
       `;
@@ -635,9 +635,9 @@
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      window.quickFindSearchOverlay = new QuickFindSearchOverlay();
+      window.pounceSearchOverlay = new PounceSearchOverlay();
     });
   } else {
-    window.quickFindSearchOverlay = new QuickFindSearchOverlay();
+    window.pounceSearchOverlay = new PounceSearchOverlay();
   }
 })();

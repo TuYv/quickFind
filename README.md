@@ -1,10 +1,10 @@
 <div align="center">
 
-# QuickFind
+# Pounce
 
-[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/clgpmlhecjlekgipngaopglbfdkonjdf?label=Chrome%20Web%20Store&color=4285F4)](https://chromewebstore.google.com/detail/quickfind-tab-bookmark-se/clgpmlhecjlekgipngaopglbfdkonjdf)
-[![GitHub stars](https://img.shields.io/github/stars/TuYv/quickFind?style=flat&color=yellow)](https://github.com/TuYv/quickFind/stargazers)
-[![License](https://img.shields.io/github/license/TuYv/quickFind)](LICENSE)
+[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/clgpmlhecjlekgipngaopglbfdkonjdf?label=Chrome%20Web%20Store&color=4285F4)](https://chromewebstore.google.com/detail/clgpmlhecjlekgipngaopglbfdkonjdf)
+[![GitHub stars](https://img.shields.io/github/stars/TuYv/pounce?style=flat&color=yellow)](https://github.com/TuYv/pounce/stargazers)
+[![License](https://img.shields.io/github/license/TuYv/pounce)](LICENSE)
 
 🌐 **English** · [中文](README.zh-CN.md)
 
@@ -13,9 +13,9 @@
 Press `⌘K` to open a unified search overlay across your open tabs, bookmarks, history, and top sites.<br>
 Keyboard-first, doesn't leave your current page.
 
-<img src="demo.gif" alt="QuickFind demo" width="680">
+<img src="demo.gif" alt="Pounce demo" width="680">
 
-**[→ Install from Chrome Web Store](https://chromewebstore.google.com/detail/quickfind-tab-bookmark-se/clgpmlhecjlekgipngaopglbfdkonjdf)**
+**[→ Install from Chrome Web Store](https://chromewebstore.google.com/detail/clgpmlhecjlekgipngaopglbfdkonjdf)**
 
 </div>
 

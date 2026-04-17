@@ -1,4 +1,4 @@
-// QuickFind Theme Manager
+// Pounce Theme Manager
 // 管理应用的主题设置：跟随系统/白天模式/夜间模式
 
 class ThemeManager {
@@ -76,7 +76,7 @@ class ThemeManager {
     // 应用主题属性 - 与CSS中的选择器匹配
     root.setAttribute('data-theme', effectiveTheme);
     
-    console.log(`QuickFind: Applied theme: ${this.currentTheme} -> ${effectiveTheme}`);
+    console.log(`Pounce: Applied theme: ${this.currentTheme} -> ${effectiveTheme}`);
   }
 
   getEffectiveTheme() {
@@ -177,7 +177,7 @@ class ContentThemeManager {
     const root = document.documentElement;
     
     // 清除所有主题相关的类名和属性
-    root.className = root.className.replace(/qf-theme-\w+/g, '');
+    root.className = root.className.replace(/pn-theme-\w+/g, '');
     root.classList.remove('theme-light', 'theme-dark', 'theme-system');
     root.removeAttribute('data-theme');
     
@@ -190,9 +190,9 @@ class ContentThemeManager {
     }
     
     // 应用主题类 - 这是单一真相源
-    root.classList.add(`qf-theme-${effectiveTheme}`);
+    root.classList.add(`pn-theme-${effectiveTheme}`);
     
-    console.log(`QuickFind: Applied theme: ${this.currentTheme} -> ${effectiveTheme}`);
+    console.log(`Pounce: Applied theme: ${this.currentTheme} -> ${effectiveTheme}`);
   }
 
   getEffectiveTheme() {

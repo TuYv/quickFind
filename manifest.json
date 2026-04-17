@@ -1,7 +1,7 @@
 {
    "action": {
       "default_popup": "popup.html",
-      "default_title": "QuickFind - Search Tabs & Bookmarks"
+      "default_title": "Pounce – Search Tabs, Bookmarks & History"
    },
    "background": {
       "service_worker": "background.js"
@@ -22,7 +22,7 @@
          }
       }
    },
-   "description": "Press ⌘K to instantly search tabs, bookmarks, history & top sites — without leaving your keyboard.",
+   "description": "One keystroke to find anything in your browser. Press ⌘K to search open tabs, bookmarks, history, and top sites.",
    "icons": {
       "128": "icons/icon128.png",
       "16": "icons/icon16.png",
@@ -30,7 +30,7 @@
    },
    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3rgTha7FzWroptYBsBi+B2Fen827de9dix5th+3ZPgSRF8OSRMNUXGPYWF510uKvarjCj60bk7PJxzb9efv0JxgeAga0gofldgN1fug+EOQkrDaTUsg464wMyA640jvNQ5uHC5pVaRDfJOs3mKavZ+Ou7NF9UeZr5s/CiheWaF5LgxVd466WV1zyMr1XYLHbs0rhYKhB6reoBHLlArkSLKri2NSbrIXO9up2002Qav5eJ6+br7yqO9gomjTJRHhC7o0xK5EIZqwUhFfkXS1CGKSUdLaozZq98T9TCKyO5Jox6PrH8fIkTPnlwpvXqPqweL7X2TDA3cFaHacLoauKiQIDAQAB",
    "manifest_version": 3,
-   "name": "QuickFind - Tab & Bookmark Search",
+   "name": "Pounce – Cmd+K Search Tabs & Bookmarks",
    "options_page": "options.html",
    "permissions": [ "storage", "tabs", "notifications", "bookmarks", "history", "topSites", "scripting", "activeTab" ],
    "update_url": "https://clients2.google.com/service/update2/crx",

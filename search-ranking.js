@@ -531,7 +531,7 @@
   };
 
   if (typeof globalThis !== 'undefined') {
-    globalThis.QuickFindSearchUtils = api;
+    globalThis.PounceSearchUtils = api;
   }
 
   if (typeof module !== 'undefined' && module.exports) {

@@ -4,8 +4,8 @@ const assert = require('node:assert/strict');
 const { rankResults, getDisplayTitle } = require('../search-ranking.js');
 
 test('browser export attaches the helper on globalThis', () => {
-  assert.equal(globalThis.QuickFindSearchUtils.rankResults, rankResults);
-  assert.equal(globalThis.QuickFindSearchUtils.getDisplayTitle, getDisplayTitle);
+  assert.equal(globalThis.PounceSearchUtils.rankResults, rankResults);
+  assert.equal(globalThis.PounceSearchUtils.getDisplayTitle, getDisplayTitle);
 });
 
 test('hostname prefix history matches outrank bookmarks and append search action', () => {
