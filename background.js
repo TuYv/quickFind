@@ -409,7 +409,7 @@ async function injectAndShow(tabId, bridgeTabId) {
     await chrome.scripting.executeScript({ target: { tabId }, files: ['theme-manager.js'] });
     await chrome.scripting.executeScript({ target: { tabId }, files: ['search-ranking.js'] });
     await chrome.scripting.executeScript({ target: { tabId }, files: ['search-overlay.js'] });
-    await chrome.scripting.insertCSS({ target: { tabId }, files: ['search-overlay.css'] });
+    // CSS 不再注入宿主页：overlay 已迁至 Shadow DOM，search-overlay.js 内部自己 link 样式表
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     const response = await chrome.tabs.sendMessage(tabId, {

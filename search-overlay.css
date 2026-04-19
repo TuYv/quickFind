@@ -1,9 +1,7 @@
 /* Pounce Search Overlay Styles */
 
-/* CSS Variables for theming - 完全由JavaScript控制，不使用媒体查询 */
-:root {
-  --pn-radius: 0.875rem; /* 14px — more intentional floating dialog feel */
-}
+/* CSS 变量定义在 .pounce-search-overlay 上（而不是 :root），
+   因为在 Shadow DOM 里 :root 不匹配任何东西；变量随 overlay 元素继承给后代。 */
 
 /* Light Theme - 亮色主题 */
 .pn-theme-light {
@@ -53,6 +51,7 @@
 
 /* Overlay container - covers entire viewport */
 .pounce-search-overlay {
+  --pn-radius: 0.875rem; /* 14px — more intentional floating dialog feel */
   position: fixed;
   top: 0;
   left: 0;

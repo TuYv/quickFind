@@ -1,11 +1,15 @@
 // Pounce Search Overlay - Content Script
 (function() {
   'use strict';
-  
+
   // Prevent multiple injections
   if (window.pounceSearchOverlay) {
     return;
   }
+
+  // compositionend 之后 Chrome/macOS IME 偶发多发一次 Enter keydown（isComposing=false），
+  // 此窗口内收到的 Enter 一律视为 IME trailing，避免误触发 selectResult。
+  const IME_TRAILING_ENTER_GUARD_MS = 120;
   
   class PounceSearchOverlay {
     constructor() {
@@ -38,9 +42,23 @@
     }
     
     createOverlay() {
+      // Shadow DOM 用于彻底隔离宿主页的 input/svg/button 全局样式（如 juejin.cn 污染）。
+      const shadowHost = document.createElement('div');
+      shadowHost.id = 'pounce-shadow-host';
+      // 0 尺寸 host：不占位、不拦截交互；overlay 自己 position:fixed 盖满视窗。
+      shadowHost.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;z-index:2147483647;';
+      this.shadowRoot = shadowHost.attachShadow({ mode: 'open' });
+
+      const cssLink = document.createElement('link');
+      cssLink.rel = 'stylesheet';
+      cssLink.href = chrome.runtime.getURL('search-overlay.css');
+      this.shadowRoot.appendChild(cssLink);
+
       // Create overlay container
       this.overlay = document.createElement('div');
       this.overlay.className = 'pounce-search-overlay';
+      // CSS 通过 <link> 异步加载，先用内联 display:none 避免首帧 FOUC。
+      this.overlay.style.display = 'none';
       
       // Create search container
       const container = document.createElement('div');
@@ -114,9 +132,9 @@
       container.appendChild(this.resultsContainer);
       container.appendChild(bottomContainer);
       this.overlay.appendChild(container);
-      
-      // Add to document
-      document.body.appendChild(this.overlay);
+
+      this.shadowRoot.appendChild(this.overlay);
+      (document.body || document.documentElement).appendChild(shadowHost);
     }
     
     bindEvents() {
@@ -133,16 +151,30 @@
       this.searchInput.addEventListener('input', (e) => {
         this.handleSearch(e.target.value);
       });
-      
+
       this.searchInput.addEventListener('keydown', (e) => {
         this.handleKeyDown(e);
       });
-      
-      // Overlay click to close
-      this.overlay.addEventListener('click', (e) => {
-        if (e.target === this.overlay) {
-          this.hide();
+
+      // 自维护 IME 组词状态：Shadow DOM + 部分 IME 下 e.isComposing 不可靠。
+      this.isComposing = false;
+      this.compositionEndedAt = 0;
+      this.searchInput.addEventListener('compositionstart', () => {
+        this.isComposing = true;
+      });
+      this.searchInput.addEventListener('compositionend', () => {
+        this.isComposing = false;
+        this.compositionEndedAt = performance.now();
+        // Shadow DOM 边缘 case：compositionend 后输入框偶发失焦，光标消失。
+        if (this.isVisible && this.shadowRoot.activeElement !== this.searchInput) {
+          this.searchInput.focus();
         }
+      });
+      
+      // 阻止点击冒泡到宿主页，同时点背板（overlay 本身）关闭弹窗
+      this.overlay.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (e.target === this.overlay) this.hide();
       });
       
       // ESC 关闭走 keyup 而不是 keydown——
@@ -163,17 +195,12 @@
         }
       }, { capture: true });
 
-      document.getElementById('pounce-close-icon').addEventListener('click', (e) => {
+      this.shadowRoot.getElementById('pounce-close-icon').addEventListener('click', (e) => {
         this.hide();
         e.preventDefault();
         e.stopPropagation();
       });
-      
-      // Prevent overlay from being affected by page scripts
-      this.overlay.addEventListener('click', (e) => {
-        e.stopPropagation();
-      });
-      
+
       this.overlay.addEventListener('keydown', (e) => {
         e.stopPropagation();
       });
@@ -214,12 +241,11 @@
         return;
       }
 
-      this.isVisible = false;
       this.overlay.style.display = 'none';
       this.searchInput.blur();
       this.currentResults = [];
       this.selectedIndex = -1;
-      
+
       // Restore page scrolling
       document.body.style.overflow = '';
     }
@@ -513,9 +539,14 @@
     }
     
     handleKeyDown(e) {
-      // IME 组词中：Enter/方向键属于输入法候选操作，不应被识别为搜索确认/选择。
-      // keyCode === 229 兼容部分浏览器对 isComposing 的缺失上报。
-      if (e.isComposing || e.keyCode === 229) return;
+      // IME 组词期间 Enter/方向键属于输入法候选操作；keyCode 229 兜底浏览器不报 isComposing 的场景。
+      if (this.isComposing || e.keyCode === 229) return;
+
+      if (e.key === 'Enter' && performance.now() - this.compositionEndedAt < IME_TRAILING_ENTER_GUARD_MS) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
 
       switch (e.key) {
         case 'ArrowDown':

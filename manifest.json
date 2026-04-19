@@ -34,5 +34,11 @@
    "options_page": "options.html",
    "permissions": [ "storage", "tabs", "notifications", "bookmarks", "history", "topSites", "scripting", "activeTab" ],
    "update_url": "https://clients2.google.com/service/update2/crx",
-   "version": "1.4.1"
+   "version": "1.4.2",
+   "web_accessible_resources": [
+      {
+         "matches": [ "<all_urls>" ],
+         "resources": [ "search-overlay.css" ]
+      }
+   ]
 }
