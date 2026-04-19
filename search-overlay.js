@@ -18,10 +18,10 @@
       this.isVisible = false;
       this.themeManager = null;
       this.bridgeTabId = null;
-      
+
       this.init();
     }
-    
+
     init() {
       this.createOverlay();
       this.bindEvents();
@@ -29,9 +29,9 @@
     }
     
     initTheme() {
-      // 初始化内容脚本主题管理器
+      // 把主题 class 挂在 overlay 自身上，避免被宿主页（如 juejin.cn）抢占 <html>
       try {
-        this.themeManager = new ContentThemeManager();
+        this.themeManager = new ContentThemeManager(this.overlay);
       } catch (error) {
         console.error('Failed to initialize theme manager:', error);
       }
@@ -145,11 +145,20 @@
         }
       });
       
-      // Global escape key — capture:true 确保在浏览器退出全屏之前拦截
+      // ESC 关闭走 keyup 而不是 keydown——
+      // 原因：在 ESC keydown handler 里关掉跳板页（当前激活 tab）会让 Chrome
+      // 的 "press and hold ESC to exit fullscreen" 保护被 bypass，单按 ESC
+      // 就退 macOS Space。改到 keyup 之后，Chrome 已经判定过"短按、不退"，
+      // 此时再 tabs.remove 和全屏状态无关。
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && this.isVisible) {
+          // keydown 只拦截默认行为，不做关闭动作
           e.preventDefault();
           e.stopPropagation();
+        }
+      }, { capture: true });
+      document.addEventListener('keyup', (e) => {
+        if (e.key === 'Escape' && this.isVisible) {
           this.hide();
         }
       }, { capture: true });
@@ -190,11 +199,18 @@
       if (!this.isVisible) return;
       this.isVisible = false; // 先置 false，阻止重复触发
 
-      // 如果是跳板页且用户未选择结果，直接关闭该标签页
+      // 如果是跳板页且用户未选择结果，直接关闭该标签页。
+      // 关键：用 setTimeout 把 tabs.remove 推出当前 keydown 事件栈。
+      // 原因：在 ESC keydown handler 同步调用链里关掉当前激活 tab，会让
+      // Chrome 的 "press and hold ESC to exit fullscreen" 计时器失效，
+      // 单按 ESC 就会退出 macOS Space。推到下一个 task 后，keydown 已结束，
+      // Chrome 完成短按判定不退 Space，之后再关 tab，两者不再互相干扰。
       if (this.bridgeTabId) {
         const tabId = this.bridgeTabId;
         this.bridgeTabId = null;
-        chrome.runtime.sendMessage({ action: 'closeBridgeTab', tabId }).catch(() => {});
+        setTimeout(() => {
+          chrome.runtime.sendMessage({ action: 'closeBridgeTab', tabId }).catch(() => {});
+        }, 0);
         return;
       }
 
@@ -516,8 +532,9 @@
           break;
           
         case 'Escape':
+          // 关闭由 document 级 keyup handler 负责，此处仅防默认行为。
+          // 不要在 keydown 里 hide() —— 见文件里 keyup 分支的注释。
           e.preventDefault();
-          this.hide();
           break;
       }
     }
@@ -585,7 +602,10 @@
             bridgeTabId: this.bridgeTabId
           });
         }
-        
+
+        // Bridge is now owned by background (reused as destination or already closed);
+        // clear so hide() won't re-close the freshly-loaded tab.
+        this.bridgeTabId = null;
         this.hide();
       } catch (error) {
         console.error('Pounce: Error selecting result:', error);

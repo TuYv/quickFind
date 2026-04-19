@@ -127,29 +127,21 @@ class ThemeManager {
 }
 
 // Content Script 版本（用于搜索覆盖层）
+// 主题 class 挂在传入的 targetElement 上（通常是 overlay 容器），
+// 不碰 document.documentElement，避免被宿主页（如 juejin.cn）的主题脚本/SPA 抹掉。
 class ContentThemeManager {
-  constructor() {
+  constructor(targetElement) {
+    if (!targetElement) {
+      throw new Error('ContentThemeManager requires a targetElement');
+    }
+    this.targetElement = targetElement;
     this.currentTheme = 'system';
     this.systemPreference = null;
     this.init();
   }
 
   async init() {
-    // 从background script获取当前主题
-    try {
-      const response = await chrome.runtime.sendMessage({
-        action: 'getTheme'
-      });
-      if (response && response.theme) {
-        this.currentTheme = response.theme;
-      }
-    } catch (error) {
-      console.error('Failed to get current theme:', error);
-      // 如果获取失败，使用默认主题
-      this.currentTheme = 'system';
-    }
-
-    // 监听系统主题变化
+    // 先同步准备 matchMedia 并立即应用一次，避免异步获取期间的 FOUC
     if (window.matchMedia) {
       this.systemPreference = window.matchMedia('(prefers-color-scheme: dark)');
       this.systemPreference.addListener(() => {
@@ -157,6 +149,20 @@ class ContentThemeManager {
           this.applyTheme();
         }
       });
+    }
+    this.applyTheme();
+
+    // 再异步从 background 拉取用户设置的主题
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: 'getTheme'
+      });
+      if (response && response.theme && response.theme !== this.currentTheme) {
+        this.currentTheme = response.theme;
+        this.applyTheme();
+      }
+    } catch (error) {
+      console.error('Failed to get current theme:', error);
     }
 
     // 监听主题变更消息
@@ -168,30 +174,23 @@ class ContentThemeManager {
         }
       });
     }
-
-    // 应用当前主题
-    this.applyTheme();
   }
 
   applyTheme() {
-    const root = document.documentElement;
-    
-    // 清除所有主题相关的类名和属性
-    root.className = root.className.replace(/pn-theme-\w+/g, '');
-    root.classList.remove('theme-light', 'theme-dark', 'theme-system');
-    root.removeAttribute('data-theme');
-    
-    // 确定实际应用的主题
+    const root = this.targetElement;
+
+    // 只清理我们自己的 class，不触碰 data-theme 等宿主页属性
+    root.classList.remove('pn-theme-light', 'pn-theme-dark');
+
     let effectiveTheme;
     if (this.currentTheme === 'system') {
       effectiveTheme = (this.systemPreference && this.systemPreference.matches) ? 'dark' : 'light';
     } else {
       effectiveTheme = this.currentTheme;
     }
-    
-    // 应用主题类 - 这是单一真相源
+
     root.classList.add(`pn-theme-${effectiveTheme}`);
-    
+
     console.log(`Pounce: Applied theme: ${this.currentTheme} -> ${effectiveTheme}`);
   }
 
