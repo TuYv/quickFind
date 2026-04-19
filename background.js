@@ -176,6 +176,10 @@ async function openAllUrls() {
 function createFaviconUrl(rawUrl) {
   try {
     const parsed = new URL(rawUrl);
+    // 仅为 http(s) 站点拼 favicon；file://、chrome://、chrome-extension:// 等
+    // 协议拼出的 URL 会被浏览器拒绝加载（"Not allowed to load local resource"）。
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
+    if (!parsed.hostname) return '';
     return `${parsed.protocol}//${parsed.hostname}/favicon.ico`;
   } catch (error) {
     return '';
