@@ -61,6 +61,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ success: false, error: error.message });
       });
     return true; // 保持消息通道开放
+  } else if (request.action === 'searchHistory') {
+    searchHistoryByText(request.query)
+      .then((items) => {
+        sendResponse({ success: true, data: items });
+      })
+      .catch((error) => {
+        console.error('Failed to search history:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+    return true;
   } else if (request.action === 'switchToTab') {
     const doSwitch = () => chrome.tabs.update(request.tabId, { active: true })
       .then(() => chrome.tabs.get(request.tabId))
@@ -235,6 +245,19 @@ async function getBookmarksData() {
   return bookmarksData;
 }
 
+function mapHistoryItem(item) {
+  return {
+    type: 'history',
+    id: item.id || `history:${item.url}`,
+    title: item.title || '',
+    url: item.url,
+    favIconUrl: createFaviconUrl(item.url),
+    lastVisitTime: item.lastVisitTime || 0,
+    visitCount: item.visitCount || 0,
+    typedCount: item.typedCount || 0
+  };
+}
+
 async function fetchHistoryData() {
   try {
     const historyItems = await chrome.history.search({
@@ -243,20 +266,27 @@ async function fetchHistoryData() {
       maxResults: 500
     });
 
-    return historyItems
-      .filter((item) => item.url)
-      .map((item) => ({
-        type: 'history',
-        id: item.id || `history:${item.url}`,
-        title: item.title || '',
-        url: item.url,
-        favIconUrl: createFaviconUrl(item.url),
-        lastVisitTime: item.lastVisitTime || 0,
-        visitCount: item.visitCount || 0,
-        typedCount: item.typedCount || 0
-      }));
+    return historyItems.filter((item) => item.url).map(mapHistoryItem);
   } catch (error) {
     console.warn('Pounce: Unable to read history data', error);
+    return [];
+  }
+}
+
+async function searchHistoryByText(query) {
+  const text = String(query || '').trim();
+  if (!text) return [];
+
+  try {
+    const historyItems = await chrome.history.search({
+      text,
+      startTime: 0,
+      maxResults: 50
+    });
+
+    return historyItems.filter((item) => item.url).map(mapHistoryItem);
+  } catch (error) {
+    console.warn('Pounce: Unable to search history by text', error);
     return [];
   }
 }

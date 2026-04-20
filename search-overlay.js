@@ -21,6 +21,9 @@
       this.selectedIndex = -1;
       this.isVisible = false;
       this.themeManager = null;
+      this.dynamicHistoryItems = [];
+      this.historyFetchTimer = null;
+      this.historyFetchRequestId = 0;
       this.bridgeTabId = null;
 
       this.init();
@@ -245,6 +248,8 @@
       this.searchInput.blur();
       this.currentResults = [];
       this.selectedIndex = -1;
+      this.cancelHistoryFetch();
+      this.dynamicHistoryItems = [];
 
       // Restore page scrolling
       document.body.style.overflow = '';
@@ -280,14 +285,64 @@
         return;
       }
 
+      const trimmed = String(query || '').trim();
+      if (trimmed) {
+        this.scheduleHistoryFetch(trimmed);
+      } else {
+        this.cancelHistoryFetch();
+        this.dynamicHistoryItems = [];
+      }
+
+      this.rerankAndRender(query);
+    }
+
+    rerankAndRender(query) {
+      const merged = Array.isArray(this.dynamicHistoryItems) && this.dynamicHistoryItems.length
+        ? [...this.allData, ...this.dynamicHistoryItems]
+        : this.allData;
+
       if (window.PounceSearchUtils && typeof window.PounceSearchUtils.rankResults === 'function') {
-        this.currentResults = window.PounceSearchUtils.rankResults(this.allData, query, 10);
+        this.currentResults = window.PounceSearchUtils.rankResults(merged, query, 10);
       } else {
         this.currentResults = this.getFallbackResults(query);
       }
-      
+
       this.selectedIndex = -1;
       this.renderResults();
+    }
+
+    cancelHistoryFetch() {
+      if (this.historyFetchTimer) {
+        clearTimeout(this.historyFetchTimer);
+        this.historyFetchTimer = null;
+      }
+      this.historyFetchRequestId += 1;
+    }
+
+    scheduleHistoryFetch(query) {
+      this.cancelHistoryFetch();
+      const requestId = this.historyFetchRequestId;
+
+      this.historyFetchTimer = setTimeout(async () => {
+        this.historyFetchTimer = null;
+        try {
+          const response = await chrome.runtime.sendMessage({
+            action: 'searchHistory',
+            query
+          });
+
+          if (requestId !== this.historyFetchRequestId) return;
+          if (!this.isVisible) return;
+          if (String(this.searchInput.value || '').trim() !== query) return;
+
+          this.dynamicHistoryItems = response && response.success && Array.isArray(response.data)
+            ? response.data
+            : [];
+          this.rerankAndRender(this.searchInput.value);
+        } catch (error) {
+          console.warn('Pounce: dynamic history fetch failed', error);
+        }
+      }, 120);
     }
 
     getFallbackResults(query) {
