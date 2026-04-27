@@ -58,6 +58,18 @@ MIT — see [LICENSE](LICENSE)
 
 ## Changelog
 
+### 1.4.4
+- Press 1–9 to instantly jump to a search result without using arrow keys
+
+### 1.4.3
+- Fix: history now queries dynamically as you type, matching Chrome address bar behavior
+
+### 1.4.1
+- Search overlay migrated to Shadow DOM — host page styles can no longer bleed in
+- Fix: favicon loading skipped for non-http(s) pages to avoid console errors
+- Fix: IME composition input (CJK) no longer triggers unintended search
+- Fix: Esc now exits the overlay in a single keypress in all cases
+
 ### 1.3.1
 - Theme toggle in popup header (Light / Dark / System), real-time sync with settings
 - Fix: tab switching falls back to opening a new tab when the target was closed
