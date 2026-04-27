@@ -28,3 +28,6 @@ npm-debug.log*
 # Environment
 .env
 .env.local
+
+# Personal working notes (launch drafts, briefs, audits) — never ship
+notes/
