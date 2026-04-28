@@ -48,3 +48,20 @@ zip -r -q "$OUT" "${FILES[@]}" -x '**/.DS_Store'
 
 echo "built $OUT"
 unzip -l "$OUT" | tail -1
+
+# Auto-tag the release when building from manifest version (skip if version was overridden)
+if [[ $# -eq 0 ]]; then
+  TAG="v${VERSION}"
+  if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+    EXISTING=$(git rev-parse "${TAG}")
+    HEAD_SHA=$(git rev-parse HEAD)
+    if [[ "$EXISTING" == "$HEAD_SHA" ]]; then
+      echo "tag ${TAG} already at HEAD"
+    else
+      echo "warn: tag ${TAG} exists at ${EXISTING:0:7} but HEAD is ${HEAD_SHA:0:7} — not moving" >&2
+    fi
+  else
+    git tag -a "${TAG}" -m "Release ${VERSION}"
+    echo "tagged ${TAG} → push with: git push origin ${TAG}"
+  fi
+fi
