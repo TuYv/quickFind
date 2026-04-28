@@ -59,6 +59,12 @@ MIT — see [LICENSE](LICENSE)
 
 ## Changelog
 
+### 1.4.6
+- Add match highlighting in search results, with a setting to turn it off.
+- Add a setting to turn quick-pick shortcuts on or off.
+- Add GitHub issue links in the popup and settings page for faster feedback.
+- Polish the settings page layout and footer hierarchy.
+
 ### 1.4.5
 - Change: digit keys `1`–`9` now type into the search box; use `Alt + 1–9` (`⌥1–⌥9` on macOS) to quick-pick a result. Fixes [#1](https://github.com/TuYv/pounce/issues/1)
 - Fix: extension updates now replace the stale overlay on already-open tabs instead of stranding the old keyboard behavior until reload

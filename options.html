@@ -321,6 +321,110 @@
       gap: 3px;
     }
 
+    /* ── Search behavior toggles ── */
+    .settings-list {
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .setting-row + .setting-row {
+      border-top: 1px solid var(--border);
+    }
+
+    .setting-row:hover {
+      background: var(--hover);
+    }
+
+    .setting-copy {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .setting-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--fg);
+      margin-bottom: 1px;
+    }
+
+    .setting-desc {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.3;
+    }
+
+    .toggle {
+      position: relative;
+      display: inline-flex;
+      width: 40px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .toggle input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+      border-radius: 999px;
+      background: var(--kbd-border);
+      transition: background 0.15s;
+    }
+
+    .setting-row:hover .toggle-slider {
+      background: color-mix(in srgb, var(--kbd-border) 85%, var(--primary));
+    }
+
+    .toggle-slider::before {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      left: 2px;
+      top: 2px;
+      border-radius: 50%;
+      background: var(--surface);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      transition: transform 0.15s;
+    }
+
+    .toggle input:checked + .toggle-slider {
+      background: var(--primary);
+    }
+
+    .setting-row:hover .toggle input:checked + .toggle-slider {
+      background: color-mix(in srgb, var(--primary) 88%, var(--fg));
+    }
+
+    .toggle input:checked + .toggle-slider::before {
+      transform: translateX(20px);
+    }
+
+    .toggle input:focus-visible + .toggle-slider {
+      outline: 2px solid color-mix(in srgb, var(--primary) 45%, transparent);
+      outline-offset: 2px;
+    }
+
     /* ── Theme picker ── */
     .theme-options {
       display: flex;
@@ -345,8 +449,8 @@
       align-items: center;
       gap: 8px;
       padding: 14px 12px;
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
       cursor: pointer;
       transition: border-color 0.15s, background 0.15s;
       background: var(--surface);
@@ -403,39 +507,42 @@
       border-top: 1px solid var(--border);
       color: var(--muted);
       font-size: 12px;
+      gap: 18px;
     }
 
-    .footer-card div:first-child {
+    .footer-meta {
       display: flex;
-      flex-direction: column;
-      gap: 2px;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
     }
 
     .footer-right {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 8px;
+      min-width: 0;
     }
 
-    .gh-cta {
+    .footer-link {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      background: var(--surface);
-      color: var(--fg);
+      gap: 5px;
+      padding: 3px 5px;
+      border-radius: 5px;
+      color: var(--muted);
       text-decoration: none;
       font-size: 12px;
-      font-weight: 500;
-      transition: border-color 0.15s, background 0.15s, color 0.15s;
+      transition: background 0.15s, color 0.15s;
     }
 
-    .gh-cta:hover {
-      border-color: var(--primary);
-      color: var(--primary);
-      background: color-mix(in srgb, var(--primary) 6%, transparent);
+    .footer-link:hover {
+      color: var(--fg);
+      background: var(--hover);
+    }
+
+    .footer-sep {
+      color: var(--border);
     }
   </style>
 </head>
@@ -518,6 +625,33 @@
     </div>
   </div>
 
+  <!-- Search Behavior -->
+  <div class="section">
+    <div class="section-label">Search Experience</div>
+    <div class="settings-list">
+      <label class="setting-row">
+        <div class="setting-copy">
+          <div class="setting-title">Quick pick</div>
+          <div class="setting-desc">Open visible results with Alt/Option + 1-9.</div>
+        </div>
+        <span class="toggle">
+          <input type="checkbox" id="quickPickEnabled" checked>
+          <span class="toggle-slider"></span>
+        </span>
+      </label>
+      <label class="setting-row">
+        <div class="setting-copy">
+          <div class="setting-title">Highlight matches</div>
+          <div class="setting-desc">Emphasize matched text in result titles and URLs.</div>
+        </div>
+        <span class="toggle">
+          <input type="checkbox" id="highlightMatchesEnabled" checked>
+          <span class="toggle-slider"></span>
+        </span>
+      </label>
+    </div>
+  </div>
+
   <!-- Appearance -->
   <div class="section">
     <div class="section-label">Appearance</div>
@@ -554,17 +688,26 @@
 
   <!-- Footer -->
   <div class="footer-card">
-    <div>
-      <div>Pounce</div>
-      <div>Loading...</div>
+    <div class="footer-meta">
+      <span>Pounce</span>
+      <span class="footer-sep">·</span>
+      <span id="optionsVersionText">Loading...</span>
     </div>
     <div class="footer-right">
-      <a class="gh-cta" href="https://github.com/TuYv/pounce" target="_blank" rel="noopener noreferrer">
+      <a class="footer-link" href="https://github.com/TuYv/pounce" target="_blank" rel="noopener noreferrer">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
           <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
         </svg>
-        Star on GitHub
+        GitHub
       </a>
+      <span class="footer-sep">·</span>
+      <a class="footer-link" href="https://github.com/TuYv/pounce/issues/new" target="_blank" rel="noopener noreferrer">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M8 1.25a6.75 6.75 0 1 0 0 13.5A6.75 6.75 0 0 0 8 1.25ZM2.75 8a5.25 5.25 0 1 1 10.5 0 5.25 5.25 0 0 1-10.5 0ZM8 4.25a.75.75 0 0 1 .75.75v3.25a.75.75 0 0 1-1.5 0V5A.75.75 0 0 1 8 4.25Zm0 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/>
+        </svg>
+        Report Issue
+      </a>
+      <span class="footer-sep">·</span>
       <span>© 2025 Pounce</span>
     </div>
   </div>
@@ -572,6 +715,7 @@
 </div>
 
 <script src="theme-manager.js"></script>
+<script src="preferences.js"></script>
 <script src="options-theme-sync.js"></script>
 <script src="options.js"></script>
 </body>

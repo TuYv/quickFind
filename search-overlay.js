@@ -29,6 +29,21 @@
   // 此窗口内收到的 Enter 一律视为 IME trailing，避免误触发 selectResult。
   const IME_TRAILING_ENTER_GUARD_MS = 120;
   const HIGHLIGHTABLE_TYPES = ['tab', 'history', 'topSite', 'bookmark'];
+  const PREFERENCES = globalThis.PouncePreferences || {};
+  const DEFAULT_SEARCH_PREFERENCES = PREFERENCES.DEFAULT_SEARCH_PREFERENCES || {
+    quickPickEnabled: true,
+    highlightMatchesEnabled: true
+  };
+  const SEARCH_PREFERENCE_KEYS = PREFERENCES.SEARCH_PREFERENCE_KEYS || Object.keys(DEFAULT_SEARCH_PREFERENCES);
+  const normalizeSearchPreferences = PREFERENCES.normalizeSearchPreferences || ((values) => {
+    const source = values && typeof values === 'object' ? values : {};
+    return SEARCH_PREFERENCE_KEYS.reduce((preferences, key) => {
+      preferences[key] = typeof source[key] === 'boolean'
+        ? source[key]
+        : DEFAULT_SEARCH_PREFERENCES[key];
+      return preferences;
+    }, {});
+  });
 
   class PounceSearchOverlay {
     constructor() {
@@ -45,6 +60,8 @@
       this.historyFetchRequestId = 0;
       this.bridgeTabId = null;
       this.visibleResultIndices = [];
+      this.searchPreferences = normalizeSearchPreferences({});
+      this.quickPickHint = null;
 
       // 版本标记 + destroy 状态，供扩展更新时旧实例替换逻辑使用
       this.version = POUNCE_OVERLAY_VERSION;
@@ -53,6 +70,7 @@
       this.docKeyDownHandler = null;
       this.docKeyUpHandler = null;
       this.runtimeMessageHandler = null;
+      this.storageChangeHandler = null;
 
       // Mac 用 ⌥ 符号，其他平台用 Alt+ 前缀
       const isMac = navigator.platform.toUpperCase().includes('MAC') ||
@@ -156,13 +174,14 @@
         <span class="pounce-hint">
           <span class="pounce-hint-key">↵</span> Select
         </span>
-        <span class="pounce-hint">
+        <span class="pounce-hint" data-pounce-quick-pick-hint>
           <span class="pounce-hint-key">${this.shortcutKeyLabel}</span><span class="pounce-hint-key">1-9</span> Quick pick
         </span>
         <span class="pounce-hint">
           <span class="pounce-hint-key">Esc</span> Close
         </span>
       `;
+      this.quickPickHint = rightContainer.querySelector('[data-pounce-quick-pick-hint]');
       bottomContainer.appendChild(rightContainer);
       
       // Assemble the overlay with correct structure
@@ -255,6 +274,18 @@
       this.resultsContainer.addEventListener('scroll', () => {
         this.updateNumberBadges();
       });
+
+      this.storageChangeHandler = (changes, area) => {
+        if (area !== 'sync') return;
+        if (!SEARCH_PREFERENCE_KEYS.some(key => changes[key])) return;
+
+        this.searchPreferences = normalizeSearchPreferences({
+          quickPickEnabled: changes.quickPickEnabled ? changes.quickPickEnabled.newValue : this.searchPreferences.quickPickEnabled,
+          highlightMatchesEnabled: changes.highlightMatchesEnabled ? changes.highlightMatchesEnabled.newValue : this.searchPreferences.highlightMatchesEnabled
+        });
+        this.applySearchPreferences();
+      };
+      chrome.storage.onChanged.addListener(this.storageChangeHandler);
     }
     
     show() {
@@ -265,6 +296,7 @@
       this.searchInput.value = '';
       this.searchInput.focus();
       this.selectedIndex = -1;
+      this.loadSearchPreferences();
       
       // Load initial data
       this.loadSearchData();
@@ -334,6 +366,15 @@
       }
       this.runtimeMessageHandler = null;
 
+      try {
+        if (this.storageChangeHandler && chrome.storage?.onChanged?.removeListener) {
+          chrome.storage.onChanged.removeListener(this.storageChangeHandler);
+        }
+      } catch (e) {
+        // chrome.runtime 可能已失效（extension context invalidated），忽略
+      }
+      this.storageChangeHandler = null;
+
       if (this.shadowHost && this.shadowHost.parentNode) {
         this.shadowHost.parentNode.removeChild(this.shadowHost);
       }
@@ -347,6 +388,34 @@
         document.body.style.overflow = '';
       }
       this.isVisible = false;
+    }
+
+    async loadSearchPreferences() {
+      try {
+        const savedPreferences = await chrome.storage.sync.get(SEARCH_PREFERENCE_KEYS);
+        if (this.isDestroyed) return;
+        this.searchPreferences = normalizeSearchPreferences(savedPreferences);
+        this.applySearchPreferences();
+      } catch (error) {
+        console.warn('Pounce: failed to load search preferences', error);
+      }
+    }
+
+    applySearchPreferences() {
+      if (this.overlay) {
+        this.overlay.classList.toggle('pounce-quick-pick-disabled', !this.searchPreferences.quickPickEnabled);
+      }
+
+      if (this.quickPickHint) {
+        this.quickPickHint.style.display = this.searchPreferences.quickPickEnabled ? 'flex' : 'none';
+      }
+
+      if (this.currentResults.length) {
+        this.renderResults(this.searchInput ? this.searchInput.value : '');
+        return;
+      }
+
+      this.updateNumberBadges();
     }
 
     async loadSearchData() {
@@ -694,7 +763,10 @@
       
       const titleText = item.displayTitle || item.title || 'Untitled';
       const urlText = item.displayUrl || item.url || '';
-      const isHighlightable = HIGHLIGHTABLE_TYPES.includes(item.type) && typeof query === 'string' && query.trim().length > 0;
+      const isHighlightable = this.searchPreferences.highlightMatchesEnabled &&
+        HIGHLIGHTABLE_TYPES.includes(item.type) &&
+        typeof query === 'string' &&
+        query.trim().length > 0;
       const ranger = (typeof globalThis !== 'undefined' && globalThis.PounceSearchUtils && globalThis.PounceSearchUtils.getHighlightRanges) || null;
 
       const title = document.createElement('div');
@@ -776,7 +848,7 @@
           // 只有 e.code='Digit1' 跨平台稳定。同时排除 Ctrl/Meta 组合，避免误触浏览器原生快捷键。
           // preventDefault 提到外层：即使对应位置没有结果（比如只搜到 3 条但按 Alt+5），
           // 也要吞掉默认行为，否则 Mac 上 Option+5 的 ∞ 等特殊字符会污染搜索框。
-          if (e.altKey && !e.ctrlKey && !e.metaKey && /^Digit[1-9]$/.test(e.code)) {
+          if (this.searchPreferences.quickPickEnabled && e.altKey && !e.ctrlKey && !e.metaKey && /^Digit[1-9]$/.test(e.code)) {
             e.preventDefault();
             const pos = parseInt(e.code.slice(5), 10) - 1;
             if (this.visibleResultIndices && pos < this.visibleResultIndices.length) {
@@ -817,6 +889,14 @@
     }
     
     updateNumberBadges() {
+      if (!this.searchPreferences.quickPickEnabled) {
+        this.visibleResultIndices = [];
+        this.resultsContainer.querySelectorAll('.pounce-result-number').forEach((numEl) => {
+          numEl.textContent = '';
+        });
+        return;
+      }
+
       const containerRect = this.resultsContainer.getBoundingClientRect();
       const results = Array.from(this.resultsContainer.querySelectorAll('.pounce-search-result'));
       this.visibleResultIndices = [];

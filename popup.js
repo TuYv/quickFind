@@ -218,6 +218,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
        await chrome.scripting.executeScript({
          target: { tabId: activeTab.id },
+         files: ['preferences.js']
+       });
+
+       await chrome.scripting.executeScript({
+         target: { tabId: activeTab.id },
          files: ['search-ranking.js']
        });
 

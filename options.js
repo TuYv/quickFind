@@ -2,15 +2,37 @@
 document.addEventListener('DOMContentLoaded', () => {
   // 模拟chrome.storage API用于预览
   if (typeof chrome === 'undefined' || !chrome.storage) {
+    const mockStore = {
+      urls: ['https://github.com', 'https://stackoverflow.com', 'https://developer.mozilla.org'],
+      theme: 'system'
+    };
     window.chrome = {
       storage: {
         sync: {
-          get: (keys) => Promise.resolve({ urls: ['https://github.com', 'https://stackoverflow.com', 'https://developer.mozilla.org'] }),
-          set: (data) => Promise.resolve()
+          get: (keys) => {
+            if (Array.isArray(keys)) {
+              return Promise.resolve(keys.reduce((result, key) => {
+                result[key] = mockStore[key];
+                return result;
+              }, {}));
+            }
+            if (typeof keys === 'string') {
+              return Promise.resolve({ [keys]: mockStore[keys] });
+            }
+            return Promise.resolve({ ...mockStore });
+          },
+          set: (data) => {
+            Object.assign(mockStore, data);
+            return Promise.resolve();
+          }
+        },
+        onChanged: {
+          addListener: () => {}
         }
       },
       runtime: {
-        sendMessage: (message) => Promise.resolve({ success: true })
+        sendMessage: (message) => Promise.resolve({ success: true }),
+        getManifest: () => ({ version: 'Preview' })
       }
     };
   }
@@ -68,6 +90,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const openAllBtn = document.getElementById('openAllBtn');
   const clearAllBtn = document.getElementById('clearAllBtn');
   const themeSelect = document.getElementById('themeSelect');
+  const quickPickToggle = document.getElementById('quickPickEnabled');
+  const highlightMatchesToggle = document.getElementById('highlightMatchesEnabled');
+  const preferenceKeys = window.PouncePreferences.SEARCH_PREFERENCE_KEYS;
+  const normalizeSearchPreferences = window.PouncePreferences.normalizeSearchPreferences;
 
   let urls = [];
   let themeManager;
@@ -90,10 +116,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // 初始化主题管理器
   initThemeManager();
 
+  // 初始化搜索行为偏好
+  initSearchPreferences();
+
   // 动态设置版本号
   try {
     const manifestData = chrome.runtime.getManifest();
-    const versionElement = document.querySelector('.footer-card div:first-child div:last-child');
+    const versionElement = document.getElementById('optionsVersionText');
     if (versionElement) {
       versionElement.textContent = `Version ${manifestData.version}`;
     }
@@ -351,6 +380,48 @@ document.addEventListener('DOMContentLoaded', () => {
       
     } catch (error) {
       console.error('Failed to initialize theme manager:', error);
+    }
+  }
+
+  async function initSearchPreferences() {
+    try {
+      const savedPreferences = await chrome.storage.sync.get(preferenceKeys);
+      applySearchPreferenceToggles(normalizeSearchPreferences(savedPreferences));
+
+      quickPickToggle.addEventListener('change', () => {
+        saveSearchPreference('quickPickEnabled', quickPickToggle.checked);
+      });
+
+      highlightMatchesToggle.addEventListener('change', () => {
+        saveSearchPreference('highlightMatchesEnabled', highlightMatchesToggle.checked);
+      });
+
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area !== 'sync') return;
+        const changedPreference = preferenceKeys.some(key => changes[key]);
+        if (!changedPreference) return;
+
+        applySearchPreferenceToggles(normalizeSearchPreferences({
+          quickPickEnabled: changes.quickPickEnabled ? changes.quickPickEnabled.newValue : quickPickToggle.checked,
+          highlightMatchesEnabled: changes.highlightMatchesEnabled ? changes.highlightMatchesEnabled.newValue : highlightMatchesToggle.checked
+        }));
+      });
+    } catch (error) {
+      console.error('Failed to initialize search preferences:', error);
+    }
+  }
+
+  function applySearchPreferenceToggles(preferences) {
+    quickPickToggle.checked = preferences.quickPickEnabled;
+    highlightMatchesToggle.checked = preferences.highlightMatchesEnabled;
+  }
+
+  async function saveSearchPreference(key, value) {
+    try {
+      await chrome.storage.sync.set({ [key]: value });
+    } catch (error) {
+      console.error('Failed to save search preference:', error);
+      showError('Failed to save setting');
     }
   }
 });

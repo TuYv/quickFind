@@ -16,6 +16,7 @@ FILES=(
   options.js
   options-theme-sync.js
   theme-manager.js
+  preferences.js
   search-overlay.js
   search-overlay.css
   search-ranking.js

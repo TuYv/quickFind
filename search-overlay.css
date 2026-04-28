@@ -217,6 +217,10 @@
   opacity: 0.7;
 }
 
+.pounce-quick-pick-disabled .pounce-result-number {
+  display: none;
+}
+
 /* Result icon */
 .pounce-result-icon {
   width: 20px;

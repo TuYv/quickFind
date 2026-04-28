@@ -34,7 +34,7 @@
    "options_page": "options.html",
    "permissions": [ "storage", "tabs", "notifications", "bookmarks", "history", "topSites", "scripting", "activeTab" ],
    "update_url": "https://clients2.google.com/service/update2/crx",
-   "version": "1.4.5",
+   "version": "1.4.6",
    "web_accessible_resources": [
       {
          "matches": [ "<all_urls>" ],
