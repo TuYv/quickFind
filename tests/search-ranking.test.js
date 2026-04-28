@@ -598,3 +598,7 @@ test('getHighlightRanges returns [] when query is not found', () => {
 test('getHighlightRanges supports CJK substrings', () => {
   assert.deepEqual(getHighlightRanges('支付宝官网', '官网'), [[3, 5]]);
 });
+
+test('getHighlightRanges trims surrounding whitespace before matching', () => {
+  assert.deepEqual(getHighlightRanges('GitHub', '  git  '), [[0, 3]]);
+});

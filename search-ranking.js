@@ -522,6 +522,7 @@
       const idx = haystack.indexOf(needle, pos);
       if (idx === -1) break;
       ranges.push([idx, idx + needle.length]);
+      // Non-overlapping advance: skip past this match instead of stepping by 1.
       pos = idx + needle.length;
     }
 
