@@ -13,7 +13,7 @@
 Press `⌘K` to open a unified search overlay across your open tabs, bookmarks, history, and top sites.<br>
 Keyboard-first, doesn't leave your current page.
 
-<img src="hero.png" alt="Pounce — search everything with ⌘K" width="820">
+<img src="hero.png" alt="Pounce — find anything with ⌘K" width="820">
 
 <img src="demo-v2.gif" alt="Pounce demo" width="680">
 
@@ -60,6 +60,10 @@ All permissions are used only for core search functionality. **No data ever leav
 MIT — see [LICENSE](LICENSE)
 
 ## Changelog
+
+### 1.5.1
+- Renamed to "Find Anything with ⌘K" — better matches the actual search scope (tabs + bookmarks + history + top sites).
+- Fix: extension's own `bridge.html` no longer leaks into search results via the history source.
 
 ### 1.5.0
 - Added Simplified Chinese localization across popup, options, search overlay, and system notifications. Auto-detects browser language; manual override in Settings → Language.
