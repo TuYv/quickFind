@@ -135,6 +135,14 @@
     "message": "输入「bd」或「baidu」即可命中「百度」。非中文标题会自动跳过。",
     "description": "Pinyin toggle description"
   },
+  "options_resultsLimit": {
+    "message": "结果数量",
+    "description": "Results limit setting label"
+  },
+  "options_resultsLimitDesc": {
+    "message": "搜索面板最多显示的结果条数。",
+    "description": "Results limit setting description"
+  },
   "options_quickPick": {
     "message": "快速跳转",
     "description": "Quick pick toggle label"

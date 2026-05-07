@@ -33,7 +33,8 @@
   const DEFAULT_SEARCH_PREFERENCES = PREFERENCES.DEFAULT_SEARCH_PREFERENCES || {
     quickPickEnabled: true,
     highlightMatchesEnabled: true,
-    pinyinMatchingEnabled: true
+    pinyinMatchingEnabled: true,
+    resultsLimit: 10
   };
   const SEARCH_PREFERENCE_KEYS = PREFERENCES.SEARCH_PREFERENCE_KEYS || Object.keys(DEFAULT_SEARCH_PREFERENCES);
   const normalizeSearchPreferences = PREFERENCES.normalizeSearchPreferences || ((values) => {
@@ -335,7 +336,8 @@
         this.searchPreferences = normalizeSearchPreferences({
           quickPickEnabled: changes.quickPickEnabled ? changes.quickPickEnabled.newValue : this.searchPreferences.quickPickEnabled,
           highlightMatchesEnabled: changes.highlightMatchesEnabled ? changes.highlightMatchesEnabled.newValue : this.searchPreferences.highlightMatchesEnabled,
-          pinyinMatchingEnabled: changes.pinyinMatchingEnabled ? changes.pinyinMatchingEnabled.newValue : this.searchPreferences.pinyinMatchingEnabled
+          pinyinMatchingEnabled: changes.pinyinMatchingEnabled ? changes.pinyinMatchingEnabled.newValue : this.searchPreferences.pinyinMatchingEnabled,
+          resultsLimit: changes.resultsLimit ? changes.resultsLimit.newValue : this.searchPreferences.resultsLimit
         });
         this.applySearchPreferences();
       };
@@ -525,8 +527,8 @@
         this.quickPickHint.style.display = this.searchPreferences.quickPickEnabled ? 'flex' : 'none';
       }
 
-      if (this.currentResults.length) {
-        this.renderResults(this.searchInput ? this.searchInput.value : '');
+      if (this.allData) {
+        this.rerankAndRender(this.searchInput ? this.searchInput.value : '');
         return;
       }
 
@@ -582,8 +584,9 @@
         ? [...this.allData, ...this.dynamicHistoryItems]
         : this.allData;
 
+      const limit = this.searchPreferences.resultsLimit || DEFAULT_SEARCH_PREFERENCES.resultsLimit;
       if (window.PounceSearchUtils && typeof window.PounceSearchUtils.rankResults === 'function') {
-        this.currentResults = window.PounceSearchUtils.rankResults(merged, query, 10);
+        this.currentResults = window.PounceSearchUtils.rankResults(merged, query, limit);
       } else {
         this.currentResults = this.getFallbackResults(query);
       }

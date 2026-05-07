@@ -135,6 +135,14 @@
     "message": "Type \"bd\" or \"baidu\" to find 百度. Auto-skipped for non-Chinese titles.",
     "description": "Pinyin toggle description"
   },
+  "options_resultsLimit": {
+    "message": "Results shown",
+    "description": "Results limit setting label"
+  },
+  "options_resultsLimitDesc": {
+    "message": "Maximum number of results displayed in the search overlay.",
+    "description": "Results limit setting description"
+  },
   "options_quickPick": {
     "message": "Quick pick",
     "description": "Quick pick toggle label"

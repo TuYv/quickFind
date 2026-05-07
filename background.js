@@ -342,7 +342,7 @@ async function searchHistoryByText(query) {
     const historyItems = await chrome.history.search({
       text,
       startTime: 0,
-      maxResults: 50
+      maxResults: 1000
     });
 
     return historyItems
