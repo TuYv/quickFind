@@ -75,8 +75,6 @@ class ThemeManager {
     
     // 应用主题属性 - 与CSS中的选择器匹配
     root.setAttribute('data-theme', effectiveTheme);
-    
-    console.log(`Pounce: Applied theme: ${this.currentTheme} -> ${effectiveTheme}`);
   }
 
   getEffectiveTheme() {
@@ -190,8 +188,6 @@ class ContentThemeManager {
     }
 
     root.classList.add(`pn-theme-${effectiveTheme}`);
-
-    console.log(`Pounce: Applied theme: ${this.currentTheme} -> ${effectiveTheme}`);
   }
 
   getEffectiveTheme() {

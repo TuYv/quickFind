@@ -557,17 +557,12 @@
 
     async loadSearchData() {
       try {
-        console.log('Pounce: Requesting search data...');
-        // Request search data from background script
         const response = await chrome.runtime.sendMessage({
           action: 'getSearchData'
         });
-        
-        console.log('Pounce: Received response:', response);
-        
+
         if (response && response.success) {
           this.allData = response.data;
-          console.log('Pounce: Loaded data:', this.allData.length, 'items');
           this.handleSearch(this.searchInput.value);
         } else {
           console.error('Pounce: Response indicates failure:', response);
