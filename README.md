@@ -65,6 +65,10 @@ MIT — see [LICENSE](LICENSE)
 
 ## Changelog
 
+### 1.5.5
+- Onboarding: Settings page now opens with a hero card showing the primary shortcut (⌘K on Mac, Alt+K elsewhere) and a one-line pitch — first-time users immediately know what Pounce is and how to use it. The "Batch Open URLs" section moved below the search preferences.
+- Fix: search overlay no longer shows two highlighted rows at the same time. This happened when the cursor sat on a result while the keyboard-selected row was different — typically right after opening the overlay with the cursor already over the list, or when an async history fetch rerendered results, or when scrolling the list. The hovered row now becomes the truly selected one, and CSS `:hover` is gated until you actually move the mouse.
+
 ### 1.5.4
 - Fix: ⌘K now works on pages whose modal libraries trap focus (e.g. OpenObserve's log detail panel using Quasar QDialog). The overlay's input would open but stay unfocused, swallowing keystrokes — focus is now shielded from the host page's focus-trap watchers.
 - Privacy: stripped success-path `console.log` calls from content scripts so internal Pounce activity no longer leaks into the host page's DevTools console. Error logging is preserved for diagnosing real failures.
