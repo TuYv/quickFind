@@ -143,6 +143,18 @@
     "message": "使用 Alt/Option + 1-9 直接打开当前可见的结果。",
     "description": "Quick pick description"
   },
+  "options_heroTitle": {
+    "message": "在任意网页打开 Pounce",
+    "description": "Hero card title on options page — primary feature pitch"
+  },
+  "options_heroDesc": {
+    "message": "按下下方快捷键，秒搜打开过的标签页、书签、浏览历史和常用网站。",
+    "description": "Hero card description on options page"
+  },
+  "options_heroChangeShortcut": {
+    "message": "修改快捷键 →",
+    "description": "Hero card CTA linking to chrome://extensions/shortcuts"
+  },
   "options_keyboardShortcuts": {
     "message": "键盘快捷键",
     "description": "Keyboard shortcuts section header in options page"

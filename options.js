@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function loadShortcuts() {
     const searchKeyEl = document.getElementById('shortcut-search');
     const batchKeyEl = document.getElementById('shortcut-batch');
+    const heroKeyEl = document.getElementById('heroShortcut');
 
     try {
       const commands = await chrome.commands.getAll();
@@ -72,12 +73,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (searchKeyEl) renderShortcut(searchKeyEl, map['search-tabs-bookmarks']);
       if (batchKeyEl)  renderShortcut(batchKeyEl,  map['open-all-urls']);
+      if (heroKeyEl)   renderShortcut(heroKeyEl,   map['search-tabs-bookmarks']);
     } catch (e) {
       // 降级：平台推断
       const isMac = navigator.platform.toUpperCase().includes('MAC') ||
         navigator.userAgent.toUpperCase().includes('MAC');
-      if (searchKeyEl) renderShortcut(searchKeyEl, isMac ? 'Command+K' : 'Alt+K');
+      const searchFallback = isMac ? 'Command+K' : 'Alt+K';
+      if (searchKeyEl) renderShortcut(searchKeyEl, searchFallback);
       if (batchKeyEl)  renderShortcut(batchKeyEl,  isMac ? 'Command+Shift+U' : 'Ctrl+Shift+U');
+      if (heroKeyEl)   renderShortcut(heroKeyEl,   searchFallback);
     }
   }
 
@@ -122,16 +126,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   let urls = [];
   let themeManager;
 
-  // "Manage →" 按钮：引导用户到快捷键设置页
+  // "Manage →" / hero "Change shortcut" 按钮：引导用户到快捷键设置页
+  function openShortcutsSettings() {
+    // chrome://extensions/shortcuts 无法通过 tabs.create 打开
+    // 导航当前标签页是唯一可行方式
+    chrome.tabs.getCurrent(tab => {
+      if (tab) chrome.tabs.update(tab.id, { url: 'chrome://extensions/shortcuts' });
+    });
+  }
   const manageShortcutsBtn = document.getElementById('manageShortcutsBtn');
   if (manageShortcutsBtn) {
-    manageShortcutsBtn.addEventListener('click', () => {
-      // chrome://extensions/shortcuts 无法通过 tabs.create 打开
-      // 导航当前标签页是唯一可行方式
-      chrome.tabs.getCurrent(tab => {
-        if (tab) chrome.tabs.update(tab.id, { url: 'chrome://extensions/shortcuts' });
-      });
-    });
+    manageShortcutsBtn.addEventListener('click', openShortcutsSettings);
+  }
+  const heroChangeShortcutBtn = document.getElementById('heroChangeShortcutBtn');
+  if (heroChangeShortcutBtn) {
+    heroChangeShortcutBtn.addEventListener('click', openShortcutsSettings);
   }
 
   // 初始化加载数据

@@ -103,6 +103,64 @@
       color: var(--muted);
     }
 
+    /* ── Hero (first-run guidance) ── */
+    .hero-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 32px 28px;
+      margin-bottom: var(--section-gap);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+    }
+
+    .hero-title {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--fg);
+    }
+
+    .hero-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+      max-width: 420px;
+      margin: -6px 0 2px;
+    }
+
+    .hero-kbd {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hero-kbd kbd {
+      font-size: 18px;
+      font-weight: 500;
+      padding: 10px 18px;
+      border-radius: 8px;
+      min-width: 46px;
+      text-align: center;
+      box-shadow: 0 1px 0 var(--kbd-border);
+    }
+
+    .hero-cta {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 2px 0;
+      letter-spacing: 0.01em;
+    }
+
+    .hero-cta:hover { text-decoration: underline; }
+
     /* ── Section ── */
     .section {
       margin-bottom: var(--section-gap);
@@ -557,46 +615,12 @@
     <span class="header-sub" data-i18n="popup_settingsTitle">Settings</span>
   </div>
 
-  <!-- URL Management -->
-  <div class="section">
-    <div class="section-label" data-i18n="options_batchOpenURLs">Batch Open URLs</div>
-
-    <div class="input-row">
-      <input type="text" id="urlInput" class="url-input" placeholder="github.com or https://example.com" data-i18n-placeholder="options_urlPlaceholder">
-      <button id="addBtn" class="btn btn-primary">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-        <span data-i18n="options_add">Add</span>
-      </button>
-    </div>
-    <div id="inputError" class="msg msg-error" style="display:none;"></div>
-    <div id="inputSuccess" class="msg msg-success" style="display:none;"></div>
-
-    <div class="list-meta">
-      <span class="list-count" id="urlCountLabel"><span id="urlCount">0</span> saved URLs</span>
-      <div class="list-actions">
-        <button id="openAllBtn" class="btn btn-ghost" style="font-size:12px; padding:6px 10px;">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-            <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-          </svg>
-          <span data-i18n="options_openAll">Open All</span>
-        </button>
-        <button id="clearAllBtn" class="btn btn-ghost" style="font-size:12px; padding:6px 10px; color:var(--destructive);">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-          </svg>
-          <span data-i18n="options_clearAll">Clear All</span>
-        </button>
-      </div>
-    </div>
-
-    <div class="url-list" id="urlList">
-      <div class="empty-state" id="emptyState">
-        <span data-i18n="options_noUrlsYet">No URLs yet</span><br><span data-i18n="options_addUrlAbove">Add a URL above to get started</span>
-      </div>
-    </div>
+  <!-- Hero: first-run guidance -->
+  <div class="hero-card">
+    <div class="hero-title" data-i18n="options_heroTitle">Open Pounce on any page</div>
+    <div class="hero-desc" data-i18n="options_heroDesc">Press the shortcut below to instantly search your tabs, bookmarks, history, and top sites.</div>
+    <div class="hero-kbd" id="heroShortcut"></div>
+    <button class="hero-cta" id="heroChangeShortcutBtn" data-i18n="options_heroChangeShortcut">Change shortcut →</button>
   </div>
 
   <!-- Keyboard Shortcuts -->
@@ -659,6 +683,48 @@
           <option value="20">20</option>
           <option value="50">50</option>
         </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- URL Management (secondary feature) -->
+  <div class="section">
+    <div class="section-label" data-i18n="options_batchOpenURLs">Batch Open URLs</div>
+
+    <div class="input-row">
+      <input type="text" id="urlInput" class="url-input" placeholder="github.com or https://example.com" data-i18n-placeholder="options_urlPlaceholder">
+      <button id="addBtn" class="btn btn-primary">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        <span data-i18n="options_add">Add</span>
+      </button>
+    </div>
+    <div id="inputError" class="msg msg-error" style="display:none;"></div>
+    <div id="inputSuccess" class="msg msg-success" style="display:none;"></div>
+
+    <div class="list-meta">
+      <span class="list-count" id="urlCountLabel"><span id="urlCount">0</span> saved URLs</span>
+      <div class="list-actions">
+        <button id="openAllBtn" class="btn btn-ghost" style="font-size:12px; padding:6px 10px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+          <span data-i18n="options_openAll">Open All</span>
+        </button>
+        <button id="clearAllBtn" class="btn btn-ghost" style="font-size:12px; padding:6px 10px; color:var(--destructive);">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+          <span data-i18n="options_clearAll">Clear All</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="url-list" id="urlList">
+      <div class="empty-state" id="emptyState">
+        <span data-i18n="options_noUrlsYet">No URLs yet</span><br><span data-i18n="options_addUrlAbove">Add a URL above to get started</span>
       </div>
     </div>
   </div>

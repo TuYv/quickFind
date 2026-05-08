@@ -143,6 +143,18 @@
     "message": "Open visible results with Alt/Option + 1-9.",
     "description": "Quick pick description"
   },
+  "options_heroTitle": {
+    "message": "Open Pounce on any page",
+    "description": "Hero card title on options page — primary feature pitch"
+  },
+  "options_heroDesc": {
+    "message": "Press the shortcut below to instantly search your tabs, bookmarks, history, and top sites.",
+    "description": "Hero card description on options page"
+  },
+  "options_heroChangeShortcut": {
+    "message": "Change shortcut →",
+    "description": "Hero card CTA linking to chrome://extensions/shortcuts"
+  },
   "options_keyboardShortcuts": {
     "message": "Keyboard Shortcuts",
     "description": "Keyboard shortcuts section header in options page"
