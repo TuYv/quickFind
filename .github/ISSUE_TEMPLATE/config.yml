@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "📖 README (中文)"
+    url: https://github.com/TuYv/pounce/blob/master/README.zh-CN.md
+    about: "提 issue 前先看看文档，可能已有答案"
+  - name: "📖 README (English)"
+    url: https://github.com/TuYv/pounce/blob/master/README.md
+    about: "Check the docs first — your question may already be answered"

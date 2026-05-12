@@ -1,0 +1,37 @@
+name: "💡 功能建议 / Feature Request"
+description: "提一个想法或改进建议 / Suggest an idea or improvement"
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > ⚠️ Pounce 目前处于维护模式，只接收 bug 修复，功能建议会被记录但**不保证采纳**。
+        > Pounce is in maintenance mode — bug fixes only. Feature suggestions are welcome but **not guaranteed** to be implemented.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: "你遇到的场景 / Your use case"
+      description: "什么场景下你希望有这个功能？现在是怎么解决的？/ When would you use this? How do you handle it today?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: "建议 / Proposal"
+      description: "你期望的功能是什么样的 / What you'd like to see"
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: "截图或示意图（可选）/ Screenshot or mockup (optional)"
+      description: "可直接把图片拖拽或粘贴到这里 / Drag & drop or paste images here"
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "替代方案（可选）/ Alternatives considered (optional)"

@@ -1,0 +1,90 @@
+name: "🐛 Bug 反馈 / Bug Report"
+description: "某个功能不工作或行为异常 / Something is broken or behaves unexpectedly"
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请尽量提供完整信息，方便定位问题。
+        Thanks for the report! Please fill in as much detail as you can.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "问题描述 / Description"
+      description: "简要说明遇到的问题 / Briefly describe what went wrong"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: "复现步骤 / Steps to reproduce"
+      placeholder: |
+        1. 打开 ...
+        2. 点击 ...
+        3. 看到 ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "期望行为 / Expected behavior"
+      description: "你预期会发生什么 / What you expected to happen"
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: "实际行为 / Actual behavior"
+      description: "实际发生了什么 / What actually happened"
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: "截图 / Screenshot"
+      description: "可直接把图片拖拽或粘贴到这里 / Drag & drop or paste images here"
+
+  - type: input
+    id: chrome-version
+    attributes:
+      label: "Chrome 版本 / Chrome version"
+      description: "可在 chrome://version 查看 / Find it at chrome://version"
+      placeholder: "例如 / e.g. 131.0.6778.86"
+    validations:
+      required: true
+
+  - type: input
+    id: extension-version
+    attributes:
+      label: "扩展版本 / Extension version"
+      placeholder: "例如 / e.g. 1.5.5"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: "操作系统 / OS"
+      options:
+        - macOS
+        - Windows
+        - Linux
+        - ChromeOS
+        - Other
+
+  - type: textarea
+    id: console
+    attributes:
+      label: "控制台日志（可选）/ Console logs (optional)"
+      description: "DevTools → Console 中的报错信息 / Any errors from DevTools Console"
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: "确认 / Confirmation"
+      options:
+        - label: "我已搜索过现有 issue，确认没有重复 / I searched existing issues and found no duplicates"
+          required: true
