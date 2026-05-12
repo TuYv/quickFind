@@ -636,3 +636,101 @@ test('getHighlightRanges respects setPinyinMatchingEnabled(false)', () => {
   assert.deepEqual(getHighlightRanges('百度搜索', 'bd'), []);
   setPyForHighlight(true); // restore
 });
+
+// --- Multi-token (whitespace-separated) AND search ---
+
+test('multi-token query matches when all tokens appear (issue #5 example)', () => {
+  const results = rankResults([
+    {
+      type: 'bookmark',
+      id: 'bookmark:1',
+      title: 'aaabbbccc',
+      url: 'https://example.com/aaabbbccc'
+    }
+  ], 'aa cc', 10);
+
+  assert.equal(results[0].type, 'bookmark');
+  assert.equal(results[0].title, 'aaabbbccc');
+});
+
+test('multi-token query is unordered — token order does not matter', () => {
+  const items = [
+    {
+      type: 'bookmark',
+      id: 'bookmark:1',
+      title: 'dev-payment-config',
+      url: 'https://internal.example.com/dev-payment-config'
+    }
+  ];
+
+  const forward = rankResults(items, 'dev payment', 10);
+  const reversed = rankResults(items, 'payment dev', 10);
+
+  assert.equal(forward[0].title, 'dev-payment-config');
+  assert.equal(reversed[0].title, 'dev-payment-config');
+});
+
+test('multi-token query filters items where any token is missing', () => {
+  const results = rankResults([
+    {
+      type: 'bookmark',
+      id: 'bookmark:1',
+      title: 'dev only',
+      url: 'https://example.com/dev'
+    },
+    {
+      type: 'bookmark',
+      id: 'bookmark:2',
+      title: 'dev payment config',
+      url: 'https://example.com/dev-payment'
+    }
+  ], 'dev payment', 10);
+
+  const realResults = results.filter((item) => item.type !== 'search');
+  assert.equal(realResults.length, 1);
+  assert.equal(realResults[0].id, 'bookmark:2');
+});
+
+test('multi-token query does not produce an Open action item', () => {
+  const results = rankResults([], 'dev payment', 10);
+  assert.equal(results.some((item) => item.type === 'open'), false);
+  assert.deepEqual(results.map((item) => item.type), ['search']);
+});
+
+test('multi-token query supports per-token pinyin fallback', () => {
+  setPyForHighlight(true);
+  const results = rankResults([
+    {
+      type: 'bookmark',
+      id: 'bookmark:1',
+      title: 'dev 百度搜索',
+      url: 'https://example.com/dev-baidu'
+    },
+    {
+      type: 'bookmark',
+      id: 'bookmark:2',
+      title: 'fat 百度搜索',
+      url: 'https://example.com/fat-baidu'
+    }
+  ], 'dev bd', 10);
+
+  const realResults = results.filter((item) => item.type !== 'search');
+  assert.equal(realResults.length, 1);
+  assert.equal(realResults[0].id, 'bookmark:1');
+});
+
+test('getHighlightRanges merges ranges from multiple tokens', () => {
+  // tokens "aa" and "cc" against "aaabbbccc" → [0,2] + [6,8]
+  assert.deepEqual(getHighlightRanges('aaabbbccc', 'aa cc'), [[0, 2], [6, 8]]);
+});
+
+test('getHighlightRanges merges overlapping multi-token ranges', () => {
+  // "git" → [0,3], "hub" → [3,6] → merge into [[0,6]]
+  assert.deepEqual(getHighlightRanges('GitHub', 'git hub'), [[0, 6]]);
+});
+
+test('getHighlightRanges keeps ranges from hitting tokens when others miss', () => {
+  // "git" hits, "xyz" finds nothing → only "git" ranges remain.
+  // Note: this only documents highlight behavior; rankResults filters out the whole item.
+  assert.deepEqual(getHighlightRanges('GitHub', 'git xyz'), [[0, 3]]);
+});

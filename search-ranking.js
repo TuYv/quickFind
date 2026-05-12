@@ -335,57 +335,47 @@
     return aUrl.localeCompare(bUrl);
   }
 
-  function getMatchTier(item, query) {
-    const queryData = getQueryMatchData(query);
+  function splitQueryTokens(query) {
+    const trimmed = String(query || '').trim();
+    if (!trimmed) return [];
+    return trimmed.split(/\s+/);
+  }
+
+  function getItemSearchFields(item) {
     const parsed = safeUrl(item?.url);
-    const title = getDisplayTitle(item).toLowerCase();
-    const hostname = parsed ? normalizeHostname(parsed) : '';
+    const titleSource = getDisplayTitle(item);
     const searchableUrl = parsed ? getSearchableUrl(item.url) : '';
-    const searchableUrlLower = searchableUrl.toLowerCase();
+    return {
+      parsed,
+      titleSource,
+      titleLower: titleSource.toLowerCase(),
+      hostname: parsed ? normalizeHostname(parsed) : '',
+      searchableUrl,
+      searchableUrlLower: searchableUrl.toLowerCase()
+    };
+  }
 
-    if (hostname && hostname.startsWith(queryData.normalizedLower)) {
-      return 0;
-    }
+  function tierForToken(token, fields) {
+    const queryData = getQueryMatchData(token);
+    const { titleSource, titleLower, hostname, searchableUrl, searchableUrlLower } = fields;
 
-    if (hostname && hostname.includes(queryData.normalizedLower)) {
-      return 1;
-    }
-
-    if (searchableUrl && searchableUrl.startsWith(queryData.normalized)) {
-      return 2;
-    }
-
-    if (searchableUrlLower && searchableUrlLower.includes(queryData.normalizedLower)) {
-      return 3;
-    }
-
-    if (title && title.startsWith(queryData.lowerRaw)) {
-      return 4;
-    }
-
-    if (title && title.includes(queryData.lowerRaw)) {
-      return 5;
-    }
+    if (hostname && hostname.startsWith(queryData.normalizedLower)) return 0;
+    if (hostname && hostname.includes(queryData.normalizedLower)) return 1;
+    if (searchableUrl && searchableUrl.startsWith(queryData.normalized)) return 2;
+    if (searchableUrlLower && searchableUrlLower.includes(queryData.normalizedLower)) return 3;
+    if (titleLower && titleLower.startsWith(queryData.lowerRaw)) return 4;
+    if (titleLower && titleLower.includes(queryData.lowerRaw)) return 5;
 
     // Pinyin fallback (tiers 6–10). Only invoked when:
     //   1) setting on
-    //   2) query has at least one ASCII letter
+    //   2) token has at least one ASCII letter
     //   3) title contains at least one CJK character (verified by the index)
-    if (!pinyinMatchingEnabled) {
-      return Number.POSITIVE_INFINITY;
-    }
+    if (!pinyinMatchingEnabled) return Number.POSITIVE_INFINITY;
     const helpers = getPinyinHelpers();
-    if (!helpers) {
-      return Number.POSITIVE_INFINITY;
-    }
-    if (!helpers.matcherApi.hasAsciiLetter(queryData.lowerRaw)) {
-      return Number.POSITIVE_INFINITY;
-    }
-    const titleSource = getDisplayTitle(item);
+    if (!helpers) return Number.POSITIVE_INFINITY;
+    if (!helpers.matcherApi.hasAsciiLetter(queryData.lowerRaw)) return Number.POSITIVE_INFINITY;
     const idx = helpers.indexApi.getPinyinIndex(titleSource);
-    if (!idx || !idx.hasCjk) {
-      return Number.POSITIVE_INFINITY;
-    }
+    if (!idx || !idx.hasCjk) return Number.POSITIVE_INFINITY;
 
     const q = queryData.lowerRaw;
     if (helpers.matcherApi.matchFullStartsWith(q, idx))     return 6;
@@ -395,6 +385,34 @@
     if (helpers.matcherApi.matchMixed(queryData.raw, idx))  return 10;
 
     return Number.POSITIVE_INFINITY;
+  }
+
+  // Multi-token AND semantics: every whitespace-separated token must match;
+  // the aggregate tier is the worst (largest) tier across tokens.
+  function computeMatchTier(item, query) {
+    const tokens = splitQueryTokens(query);
+    const fields = getItemSearchFields(item);
+    if (tokens.length === 0) return tierForToken('', fields);
+    if (tokens.length === 1) return tierForToken(tokens[0], fields);
+
+    let worst = -1;
+    for (const token of tokens) {
+      const t = tierForToken(token, fields);
+      if (t === Number.POSITIVE_INFINITY) return Number.POSITIVE_INFINITY;
+      if (t > worst) worst = t;
+    }
+    return worst;
+  }
+
+  function getMatchTier(item, query, tierCache) {
+    if (tierCache && item && typeof item === 'object') {
+      const cached = tierCache.get(item);
+      if (cached !== undefined) return cached;
+      const tier = computeMatchTier(item, query);
+      tierCache.set(item, tier);
+      return tier;
+    }
+    return computeMatchTier(item, query);
   }
 
   function getSearchOption(query) {
@@ -444,10 +462,10 @@
     };
   }
 
-  function compareCandidates(a, b, query) {
+  function compareCandidates(a, b, query, tierCache) {
     if (query) {
-      const aTier = getMatchTier(a, query);
-      const bTier = getMatchTier(b, query);
+      const aTier = getMatchTier(a, query, tierCache);
+      const bTier = getMatchTier(b, query, tierCache);
       if (aTier !== bTier) {
         return aTier - bTier;
       }
@@ -473,7 +491,7 @@
     return String(a.id || '').localeCompare(String(b.id || ''));
   }
 
-  function dedupeResults(results, query) {
+  function dedupeResults(results, query, tierCache) {
     const bestByUrl = new Map();
 
     for (const item of results) {
@@ -484,7 +502,7 @@
       const key = getDedupeKey(item);
       const existing = bestByUrl.get(key);
 
-      if (!existing || compareCandidates(item, existing, query) < 0) {
+      if (!existing || compareCandidates(item, existing, query, tierCache) < 0) {
         bestByUrl.set(key, item);
       }
     }
@@ -492,7 +510,7 @@
     return Array.from(bestByUrl.values());
   }
 
-  function sortResults(results, query) {
+  function sortResults(results, query, tierCache) {
     return results.sort((a, b) => {
       if (!query) {
         const sourceDiff = (SOURCE_PRIORITY[a.type] ?? 99) - (SOURCE_PRIORITY[b.type] ?? 99);
@@ -508,8 +526,8 @@
         return String(a.id || '').localeCompare(String(b.id || ''));
       }
 
-      const aTier = getMatchTier(a, query);
-      const bTier = getMatchTier(b, query);
+      const aTier = getMatchTier(a, query, tierCache);
+      const bTier = getMatchTier(b, query, tierCache);
       if (aTier !== bTier) {
         return aTier - bTier;
       }
@@ -528,12 +546,12 @@
     });
   }
 
-  function insertResultByRank(results, candidate, query) {
+  function insertResultByRank(results, candidate, query, tierCache) {
     const rankedResults = Array.isArray(results) ? results.slice() : [];
     let insertIndex = rankedResults.length;
 
     for (let index = 0; index < rankedResults.length; index += 1) {
-      if (compareCandidates(candidate, rankedResults[index], query) < 0) {
+      if (compareCandidates(candidate, rankedResults[index], query, tierCache) < 0) {
         insertIndex = index;
         break;
       }
@@ -543,17 +561,14 @@
     return rankedResults;
   }
 
-  function getHighlightRanges(text, query) {
+  function getHighlightRangesForToken(text, token) {
     if (typeof text !== 'string' || text.length === 0) return [];
-    if (typeof query !== 'string') return [];
-    const trimmedQuery = query.trim();
-    if (trimmedQuery.length === 0) return [];
+    if (typeof token !== 'string' || token.length === 0) return [];
 
-    // Literal pass — same as before.
     const literalRanges = [];
-    if (trimmedQuery.length <= text.length) {
+    if (token.length <= text.length) {
       const haystack = text.toLowerCase();
-      const needle = trimmedQuery.toLowerCase();
+      const needle = token.toLowerCase();
       let pos = 0;
       while (pos <= haystack.length - needle.length) {
         const idx = haystack.indexOf(needle, pos);
@@ -564,30 +579,71 @@
     }
     if (literalRanges.length > 0) return literalRanges;
 
-    // Pinyin fallback — same gates as getMatchTier.
+    // Pinyin fallback — same gates as tierForToken.
     if (!pinyinMatchingEnabled) return [];
     const helpers = getPinyinHelpers();
     if (!helpers) return [];
-    if (!helpers.matcherApi.hasAsciiLetter(trimmedQuery)) return [];
+    if (!helpers.matcherApi.hasAsciiLetter(token)) return [];
     const idx = helpers.indexApi.getPinyinIndex(text);
     if (!idx || !idx.hasCjk) return [];
 
-    const m = helpers.matcherApi.matchFullStartsWith(trimmedQuery, idx)
-           || helpers.matcherApi.matchInitialsStartsWith(trimmedQuery, idx)
-           || helpers.matcherApi.matchFullIncludes(trimmedQuery, idx)
-           || helpers.matcherApi.matchInitialsIncludes(trimmedQuery, idx)
-           || helpers.matcherApi.matchMixed(trimmedQuery, idx);
+    const m = helpers.matcherApi.matchFullStartsWith(token, idx)
+           || helpers.matcherApi.matchInitialsStartsWith(token, idx)
+           || helpers.matcherApi.matchFullIncludes(token, idx)
+           || helpers.matcherApi.matchInitialsIncludes(token, idx)
+           || helpers.matcherApi.matchMixed(token, idx);
     return m ? m.ranges : [];
+  }
+
+  function mergeRanges(ranges) {
+    if (ranges.length <= 1) return ranges;
+    const sorted = ranges.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const merged = [sorted[0].slice()];
+    for (let i = 1; i < sorted.length; i += 1) {
+      const last = merged[merged.length - 1];
+      const cur = sorted[i];
+      if (cur[0] <= last[1]) {
+        if (cur[1] > last[1]) last[1] = cur[1];
+      } else {
+        merged.push(cur.slice());
+      }
+    }
+    return merged;
+  }
+
+  function getHighlightRanges(text, query) {
+    if (typeof text !== 'string' || text.length === 0) return [];
+    if (typeof query !== 'string') return [];
+    const tokens = splitQueryTokens(query);
+    if (tokens.length === 0) return [];
+    if (tokens.length === 1) return getHighlightRangesForToken(text, tokens[0]);
+
+    const all = [];
+    for (const token of tokens) {
+      const ranges = getHighlightRangesForToken(text, token);
+      for (const range of ranges) all.push(range);
+    }
+    return mergeRanges(all);
   }
 
   function rankResults(items, query = '', limit = 10) {
     const normalizedQuery = String(query || '').trim().toLowerCase();
     const sourceItems = Array.isArray(items) ? items : [];
+    // Memoize tier per item ref so sort/dedupe don't recompute it O(n log n) times.
+    const tierCache = new Map();
     const eligibleItems = normalizedQuery
-      ? sourceItems.filter((item) => getMatchTier(item, normalizedQuery) !== Number.POSITIVE_INFINITY)
+      ? sourceItems.filter((item) => getMatchTier(item, normalizedQuery, tierCache) !== Number.POSITIVE_INFINITY)
       : sourceItems;
-    const deduped = dedupeResults(eligibleItems, normalizedQuery);
-    const ranked = sortResults(deduped.map(enrichResult), normalizedQuery);
+    const deduped = dedupeResults(eligibleItems, normalizedQuery, tierCache);
+    const enrichedDeduped = deduped.map((item) => {
+      const enriched = enrichResult(item);
+      // Carry tier across enrichment so the cache stays warm for the new object.
+      if (normalizedQuery && tierCache.has(item)) {
+        tierCache.set(enriched, tierCache.get(item));
+      }
+      return enriched;
+    });
+    const ranked = sortResults(enrichedDeduped, normalizedQuery, tierCache);
     const clipped = Number.isFinite(limit) ? ranked.slice(0, Math.max(0, limit)) : ranked;
 
     if (!normalizedQuery) {
@@ -597,7 +653,7 @@
     const trimmedQuery = String(query || '').trim();
     const openOption = getOpenOption(trimmedQuery);
     const resultsWithActions = openOption
-      ? insertResultByRank(clipped, openOption, normalizedQuery)
+      ? insertResultByRank(clipped, openOption, normalizedQuery, tierCache)
       : [...clipped];
 
     resultsWithActions.push(getSearchOption(trimmedQuery));
