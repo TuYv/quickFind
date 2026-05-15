@@ -3,6 +3,7 @@
 # Pounce
 
 [![Chrome 应用商店](https://img.shields.io/chrome-web-store/v/clgpmlhecjlekgipngaopglbfdkonjdf?label=Chrome%20%E5%95%86%E5%BA%97&color=4285F4)](https://chromewebstore.google.com/detail/clgpmlhecjlekgipngaopglbfdkonjdf)
+[![用户数](https://img.shields.io/chrome-web-store/users/clgpmlhecjlekgipngaopglbfdkonjdf?label=%E7%94%A8%E6%88%B7%E6%95%B0&color=4285F4)](https://chromewebstore.google.com/detail/clgpmlhecjlekgipngaopglbfdkonjdf)
 [![评分](https://img.shields.io/chrome-web-store/rating/clgpmlhecjlekgipngaopglbfdkonjdf?label=%E8%AF%84%E5%88%86&color=brightgreen)](https://chromewebstore.google.com/detail/clgpmlhecjlekgipngaopglbfdkonjdf/reviews)
 [![GitHub stars](https://img.shields.io/github/stars/TuYv/pounce?style=flat&color=yellow)](https://github.com/TuYv/pounce/stargazers)
 [![最近更新](https://img.shields.io/github/last-commit/TuYv/pounce?label=%E6%9C%80%E8%BF%91%E6%9B%B4%E6%96%B0&color=informational)](https://github.com/TuYv/pounce/commits/master)
