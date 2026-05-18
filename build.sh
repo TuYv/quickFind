@@ -42,6 +42,26 @@ else
   VERSION=$(python3 -c 'import json; print(json.load(open("manifest.json"))["version"])')
 fi
 
+python3 - "$VERSION" <<'PY'
+from pathlib import Path
+import sys
+
+version = sys.argv[1]
+missing = []
+for filename in ('CHANGELOG.md', 'CHANGELOG.zh-CN.md'):
+    path = Path(filename)
+    heading = f'### {version}'
+    if not path.exists():
+        missing.append(f'{filename} is missing')
+    elif heading not in path.read_text(encoding='utf-8'):
+        missing.append(f'{filename} is missing {heading}')
+
+if missing:
+    for item in missing:
+        print(f'error: {item}', file=sys.stderr)
+    sys.exit(1)
+PY
+
 OUT="pounce-${VERSION}.zip"
 
 if [[ -e "$OUT" ]]; then
