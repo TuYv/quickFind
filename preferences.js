@@ -34,6 +34,7 @@
     DEFAULT_SEARCH_PREFERENCES,
     SEARCH_PREFERENCE_KEYS,
     ALLOWED_RESULTS_LIMITS,
+    normalizeResultsLimit,
     normalizeSearchPreferences
   };
 

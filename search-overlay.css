@@ -379,10 +379,42 @@
   gap: 12px;
 }
 
+.pounce-search-bottom-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pounce-results-counter {
+  white-space: nowrap;
+}
+
+.pounce-results-limit-select {
+  height: 22px;
+  border: 1px solid var(--pn-border);
+  border-radius: 6px;
+  background: var(--pn-card);
+  color: var(--pn-muted-foreground);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  padding: 1px 20px 1px 7px;
+  outline: none;
+  cursor: pointer;
+}
+
+.pounce-results-limit-select:hover,
+.pounce-results-limit-select:focus {
+  border-color: var(--pn-primary);
+  color: var(--pn-foreground);
+}
+
 .pounce-hints {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .pounce-hint {

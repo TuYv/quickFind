@@ -35,13 +35,22 @@
     pinyinMatchingEnabled: true,
     resultsLimit: 10
   };
+  const ALLOWED_RESULTS_LIMITS = PREFERENCES.ALLOWED_RESULTS_LIMITS || [10, 20, 50];
   const SEARCH_PREFERENCE_KEYS = PREFERENCES.SEARCH_PREFERENCE_KEYS || Object.keys(DEFAULT_SEARCH_PREFERENCES);
+  const normalizeResultsLimit = PREFERENCES.normalizeResultsLimit || ((value) => {
+    const num = Number(value);
+    return ALLOWED_RESULTS_LIMITS.includes(num) ? num : DEFAULT_SEARCH_PREFERENCES.resultsLimit;
+  });
   const normalizeSearchPreferences = PREFERENCES.normalizeSearchPreferences || ((values) => {
     const source = values && typeof values === 'object' ? values : {};
     return SEARCH_PREFERENCE_KEYS.reduce((preferences, key) => {
-      preferences[key] = typeof source[key] === 'boolean'
-        ? source[key]
-        : DEFAULT_SEARCH_PREFERENCES[key];
+      if (key === 'resultsLimit') {
+        preferences[key] = normalizeResultsLimit(source[key]);
+      } else {
+        preferences[key] = typeof source[key] === 'boolean'
+          ? source[key]
+          : DEFAULT_SEARCH_PREFERENCES[key];
+      }
       return preferences;
     }, {});
   });
@@ -63,6 +72,7 @@
       this.visibleResultIndices = [];
       this.searchPreferences = normalizeSearchPreferences({});
       this.quickPickHint = null;
+      this.resultsLimitSelect = null;
 
       // 版本标记 + destroy 状态，供扩展更新时旧实例替换逻辑使用
       this.version = POUNCE_OVERLAY_VERSION;
@@ -202,10 +212,15 @@
 
       const leftContainer = document.createElement('div');
       leftContainer.className = 'pounce-search-bottom-left';
-      leftContainer.textContent = window.i18n
+      const resultsCounter = document.createElement('span');
+      resultsCounter.className = 'pounce-results-counter';
+      resultsCounter.textContent = window.i18n
         ? window.i18n.t('overlay_zeroResults')
         : '0 results';
-      this.resultsCounter = leftContainer; // 保存引用以便后续更新
+      this.resultsCounter = resultsCounter; // 保存引用以便后续更新
+      this.resultsLimitSelect = this.createResultsLimitSelect();
+      leftContainer.appendChild(resultsCounter);
+      leftContainer.appendChild(this.resultsLimitSelect);
       bottomContainer.appendChild(leftContainer);
       const rightContainer = document.createElement('div');
       rightContainer.className = 'pounce-hints';
@@ -278,6 +293,44 @@
       this.shadowRoot.appendChild(this.overlay);
       (document.body || document.documentElement).appendChild(shadowHost);
     }
+
+    getResultsLimitLabel() {
+      return window.i18n ? window.i18n.t('options_resultsLimit') : 'Results shown';
+    }
+
+    createResultsLimitSelect() {
+      const select = document.createElement('select');
+      select.className = 'pounce-results-limit-select';
+
+      ALLOWED_RESULTS_LIMITS.forEach((limit) => {
+        const option = document.createElement('option');
+        option.value = String(limit);
+        option.textContent = String(limit);
+        select.appendChild(option);
+      });
+
+      this.syncResultsLimitSelectLabel(select);
+      return select;
+    }
+
+    syncResultsLimitSelectLabel(select = this.resultsLimitSelect) {
+      if (!select) return;
+      const label = this.getResultsLimitLabel();
+      select.title = label;
+      select.setAttribute('aria-label', label);
+    }
+
+    syncResultsLimitSelectValue() {
+      if (!this.resultsLimitSelect) return;
+      this.resultsLimitSelect.value = String(this.searchPreferences.resultsLimit);
+    }
+
+    isResultsLimitSelectEvent(event) {
+      if (!this.resultsLimitSelect || !event) return false;
+      if (event.target === this.resultsLimitSelect) return true;
+      return typeof event.composedPath === 'function' &&
+        event.composedPath().includes(this.resultsLimitSelect);
+    }
     
     bindEvents() {
       // Listen for messages from background script
@@ -304,6 +357,12 @@
         this._resetMouseActivation();
         this.handleKeyDown(e);
       });
+
+      if (this.resultsLimitSelect) {
+        this.resultsLimitSelect.addEventListener('change', () => {
+          this.handleResultsLimitSelectChange();
+        });
+      }
 
       // 自维护 IME 组词状态：Shadow DOM + 部分 IME 下 e.isComposing 不可靠。
       this.isComposing = false;
@@ -333,6 +392,7 @@
       // 此时再 tabs.remove 和全屏状态无关。
       // handler 存为实例属性，扩展更新替换旧实例时 destroy() 才能清掉。
       this.docKeyDownHandler = (e) => {
+        if (this.isResultsLimitSelectEvent(e)) return;
         if (e.key === 'Escape' && this.isVisible) {
           // keydown 只拦截默认行为，不做关闭动作
           e.preventDefault();
@@ -340,6 +400,7 @@
         }
       };
       this.docKeyUpHandler = (e) => {
+        if (this.isResultsLimitSelectEvent(e)) return;
         if (e.key === 'Escape' && this.isVisible) {
           this.hide();
         }
@@ -455,6 +516,7 @@
       if (this.closeHintEl) {
         this.closeHintEl.textContent = ' ' + window.i18n.t('overlay_close');
       }
+      this.syncResultsLimitSelectLabel();
       // 重新渲染当前结果（含 sourceLabel 等动态文本）和计数
       if (this.currentResults && this.currentResults.length) {
         this.renderResults(this.searchInput ? this.searchInput.value : '');
@@ -605,6 +667,7 @@
       this.overlay = null;
       this.searchInput = null;
       this.resultsContainer = null;
+      this.resultsLimitSelect = null;
 
       if (this.isVisible) {
         document.body.style.overflow = '';
@@ -628,6 +691,8 @@
         window.PounceSearchUtils.setPinyinMatchingEnabled(this.searchPreferences.pinyinMatchingEnabled);
       }
 
+      this.syncResultsLimitSelectValue();
+
       if (this.overlay) {
         this.overlay.classList.toggle('pounce-quick-pick-disabled', !this.searchPreferences.quickPickEnabled);
       }
@@ -642,6 +707,39 @@
       }
 
       this.updateNumberBadges();
+    }
+
+    handleResultsLimitSelectChange() {
+      this.updateResultsLimitPreference(this.resultsLimitSelect.value);
+    }
+
+    async updateResultsLimitPreference(value) {
+      const nextPreferences = normalizeSearchPreferences({
+        ...this.searchPreferences,
+        resultsLimit: value
+      });
+      const nextLimit = nextPreferences.resultsLimit;
+
+      if (nextLimit === this.searchPreferences.resultsLimit) {
+        this.syncResultsLimitSelectValue();
+        return;
+      }
+
+      const previousPreferences = this.searchPreferences;
+      this.searchPreferences = nextPreferences;
+      this.applySearchPreferences();
+
+      try {
+        await this.saveResultsLimitPreference(nextLimit);
+      } catch (error) {
+        console.warn('Pounce: failed to save results limit preference', error);
+        this.searchPreferences = previousPreferences;
+        this.applySearchPreferences();
+      }
+    }
+
+    saveResultsLimitPreference(resultsLimit) {
+      return chrome.storage.sync.set({ resultsLimit });
     }
 
     async loadSearchData() {
