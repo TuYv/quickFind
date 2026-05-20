@@ -228,14 +228,20 @@ test('changing the results limit returns focus to the search input', () => {
   assert.equal(overlay.searchInput.focused, true);
 });
 
-test('favicon selection prefers safe item icons before extension favicon lookup', () => {
+test('favicon selection keeps external icons behind the extension favicon lookup', () => {
   const overlay = createOverlayHarness();
 
   assert.equal(overlay.getSafeFaviconUrl({
     type: 'history',
     url: 'https://example.com/page',
     favIconUrl: 'https://example.com/favicon.ico'
-  }), 'https://example.com/favicon.ico');
+  }), overlay.getFaviconUrl('https://example.com/page'));
+
+  assert.equal(overlay.getSafeFaviconUrl({
+    type: 'history',
+    url: 'https://example.com/page',
+    favIconUrl: 'chrome-extension://pounce/icons/example.png'
+  }), 'chrome-extension://pounce/icons/example.png');
 
   assert.equal(overlay.getSafeFaviconUrl({
     type: 'history',
@@ -270,7 +276,7 @@ test('result icons fall back to letters when favicon loading fails', () => {
   const icon = element.querySelector('.pounce-result-icon');
   const img = icon.querySelector('img');
 
-  assert.equal(img.src, 'https://example.com/favicon.ico');
+  assert.equal(img.src, overlay.getFaviconUrl('https://example.com/'));
   img.onerror();
   assert.equal(icon.textContent, 'H');
 });

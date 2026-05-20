@@ -129,13 +129,12 @@
       return faviconUrl.toString();
     }
 
-    isSafeIconUrl(value) {
+    isExtensionIconUrl(value) {
       if (!value || typeof value !== 'string') return false;
       try {
         const parsed = new URL(value);
-        return parsed.protocol === 'http:' ||
-          parsed.protocol === 'https:' ||
-          parsed.protocol === 'chrome-extension:';
+        const extensionOrigin = new URL(chrome.runtime.getURL('')).origin;
+        return parsed.protocol === 'chrome-extension:' && parsed.origin === extensionOrigin;
       } catch (error) {
         return false;
       }
@@ -145,7 +144,7 @@
       if (!item || item.type === 'search' || !item.url) {
         return '';
       }
-      if (this.isSafeIconUrl(item.favIconUrl)) {
+      if (this.isExtensionIconUrl(item.favIconUrl)) {
         return item.favIconUrl;
       }
       return this.getFaviconUrl(item.url);
@@ -580,8 +579,9 @@
     }
 
     _placeShadowHostForFocus() {
-      const activeDialog = document.activeElement?.closest?.('dialog, [role="dialog"], [aria-modal="true"]');
-      const parent = activeDialog || document.body;
+      // Keep the visual host at the document root. Ancestors with transform/filter/contain
+      // change position:fixed containing blocks and can clip or offset the viewport overlay.
+      const parent = document.body || document.documentElement;
       if (this.shadowHost && this.shadowHost.parentNode !== parent) {
         parent.appendChild(this.shadowHost);
       }
@@ -1144,6 +1144,7 @@
         if (favIconUrl && !favIconUrl.startsWith('chrome://')) {
           // 使用实际的网页图标（跳过 chrome:// 图标，浏览器会阻止加载）
           const img = document.createElement('img');
+          img.referrerPolicy = 'no-referrer';
           img.src = favIconUrl;
           img.alt = item.displayTitle || item.title || (window.i18n ? window.i18n.t('overlay_websiteIconAlt') : 'Website icon');
           img.onerror = function() {

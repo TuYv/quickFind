@@ -315,16 +315,17 @@ function createModalWithFocusedButton(document) {
   return { dialog, issueButton };
 }
 
-test('keeps focus in Pounce when an existing modal focus trap restores focus before Pounce handlers run', async () => {
+test('keeps focus in Pounce without moving the shadow host into a modal', async () => {
   const { window, document } = createContext();
   const { dialog, issueButton } = createModalWithFocusedButton(document);
+  let focusTrapCalls = 0;
 
-  window.addEventListener('focusout', (event) => {
-    const overlayHost = dialog.childNodes.find((node) => node.id === 'pounce-shadow-host');
-    if (event.target === issueButton && event.relatedTarget !== overlayHost) {
+  document.body.addEventListener('focusin', (event) => {
+    if (!dialog.contains(event.target)) {
+      focusTrapCalls += 1;
       issueButton.focus();
     }
-  }, { capture: true });
+  });
 
   const overlay = loadOverlay(window);
   overlay.show();
@@ -332,18 +333,20 @@ test('keeps focus in Pounce when an existing modal focus trap restores focus bef
 
   assert.equal(overlay.shadowRoot.activeElement?.className, 'pounce-search-input');
   assert.equal(document.activeElement?.id, 'pounce-shadow-host');
-  assert.equal(overlay.shadowHost.parentNode, dialog);
+  assert.equal(overlay.shadowHost.parentNode, document.body);
+  assert.equal(focusTrapCalls, 0);
 });
 
-test('keeps Pounce visible inside a host modal and closes with Escape', async () => {
+test('keeps the visual host at the document root for transformed modals and closes with Escape', async () => {
   const { window, document } = createContext();
   const { dialog } = createModalWithFocusedButton(document);
+  dialog.style.transform = 'translateZ(0)';
   const overlay = loadOverlay(window);
 
   overlay.show();
   await new Promise((resolve) => setTimeout(resolve, 0));
 
-  assert.equal(overlay.shadowHost.parentNode, dialog);
+  assert.equal(overlay.shadowHost.parentNode, document.body);
   assert.equal(overlay.overlay.style.display, 'flex');
   assert.equal(document.body.style.overflow, 'hidden');
 
