@@ -392,18 +392,22 @@
       // 此时再 tabs.remove 和全屏状态无关。
       // handler 存为实例属性，扩展更新替换旧实例时 destroy() 才能清掉。
       this.docKeyDownHandler = (e) => {
-        if (this.isResultsLimitSelectEvent(e)) return;
         if (e.key === 'Escape' && this.isVisible) {
           // keydown 只拦截默认行为，不做关闭动作
           e.preventDefault();
           e.stopPropagation();
+          return;
         }
+        if (this.isResultsLimitSelectEvent(e)) return;
       };
       this.docKeyUpHandler = (e) => {
-        if (this.isResultsLimitSelectEvent(e)) return;
         if (e.key === 'Escape' && this.isVisible) {
+          e.preventDefault();
+          e.stopPropagation();
           this.hide();
+          return;
         }
+        if (this.isResultsLimitSelectEvent(e)) return;
       };
       document.addEventListener('keydown', this.docKeyDownHandler, { capture: true });
       document.addEventListener('keyup', this.docKeyUpHandler, { capture: true });
@@ -711,6 +715,9 @@
 
     handleResultsLimitSelectChange() {
       this.updateResultsLimitPreference(this.resultsLimitSelect.value);
+      if (this.isVisible && this.searchInput) {
+        this.searchInput.focus();
+      }
     }
 
     async updateResultsLimitPreference(value) {
@@ -879,7 +886,8 @@
       });
 
       const tr = (key, fallback) => (window.i18n ? window.i18n.t(key) : fallback);
-      const results = filteredItems.slice(0, 10).map((item) => {
+      const limit = this.searchPreferences.resultsLimit || DEFAULT_SEARCH_PREFERENCES.resultsLimit;
+      const results = filteredItems.slice(0, limit).map((item) => {
         const sourceLabel = item.type === 'history'
           ? tr('overlay_sourceHistory', 'History')
           : item.type === 'topSite'
