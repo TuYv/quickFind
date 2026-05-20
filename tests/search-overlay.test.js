@@ -59,6 +59,15 @@ class FakeElement {
     this.focused = true;
   }
 
+  set innerHTML(value) {
+    this._innerHTML = String(value);
+    this.children = [];
+  }
+
+  get innerHTML() {
+    return this._innerHTML || '';
+  }
+
   setAttribute(name, value) {
     this.attributes[name] = String(value);
   }
@@ -133,6 +142,7 @@ function createOverlayHarness() {
     requestAnimationFrame: (handler) => handler(),
     performance: { now: () => 1000 },
     navigator: { platform: 'MacIntel', userAgent: 'Macintosh' },
+    URL,
     document,
     PouncePreferences: preferences,
     ContentThemeManager: class ContentThemeManager {},
@@ -216,4 +226,51 @@ test('changing the results limit returns focus to the search input', () => {
   overlay.handleResultsLimitSelectChange();
 
   assert.equal(overlay.searchInput.focused, true);
+});
+
+test('favicon selection prefers safe item icons before extension favicon lookup', () => {
+  const overlay = createOverlayHarness();
+
+  assert.equal(overlay.getSafeFaviconUrl({
+    type: 'history',
+    url: 'https://example.com/page',
+    favIconUrl: 'https://example.com/favicon.ico'
+  }), 'https://example.com/favicon.ico');
+
+  assert.equal(overlay.getSafeFaviconUrl({
+    type: 'history',
+    url: 'https://example.com/page',
+    favIconUrl: 'chrome://favicon/example'
+  }), overlay.getFaviconUrl('https://example.com/page'));
+});
+
+test('direct open results use extension favicon lookup without storing duplicate icon urls', () => {
+  const overlay = createOverlayHarness();
+
+  const result = overlay.createOpenFallbackResult('example.com');
+
+  assert.equal(result.type, 'open');
+  assert.equal(result.favIconUrl, undefined);
+  assert.equal(overlay.getSafeFaviconUrl(result), overlay.getFaviconUrl('https://example.com/'));
+});
+
+test('result icons fall back to letters when favicon loading fails', () => {
+  const overlay = createOverlayHarness();
+  const element = overlay.createResultElement({
+    type: 'history',
+    id: 'history:1',
+    title: 'Example',
+    displayTitle: 'Example',
+    url: 'https://example.com/',
+    displayUrl: 'example.com',
+    iconFallback: 'H',
+    favIconUrl: 'https://example.com/favicon.ico'
+  }, 0, '');
+
+  const icon = element.querySelector('.pounce-result-icon');
+  const img = icon.querySelector('img');
+
+  assert.equal(img.src, 'https://example.com/favicon.ico');
+  img.onerror();
+  assert.equal(icon.textContent, 'H');
 });

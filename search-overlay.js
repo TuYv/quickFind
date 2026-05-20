@@ -129,9 +129,24 @@
       return faviconUrl.toString();
     }
 
+    isSafeIconUrl(value) {
+      if (!value || typeof value !== 'string') return false;
+      try {
+        const parsed = new URL(value);
+        return parsed.protocol === 'http:' ||
+          parsed.protocol === 'https:' ||
+          parsed.protocol === 'chrome-extension:';
+      } catch (error) {
+        return false;
+      }
+    }
+
     getSafeFaviconUrl(item) {
       if (!item || item.type === 'search' || !item.url) {
         return '';
+      }
+      if (this.isSafeIconUrl(item.favIconUrl)) {
+        return item.favIconUrl;
       }
       return this.getFaviconUrl(item.url);
     }
@@ -1033,7 +1048,6 @@
           displayUrl: normalizedUrl,
           sourceLabel: window.i18n ? window.i18n.t('overlay_sourceOpen') : 'Open',
           iconFallback: 'O',
-          favIconUrl: this.getFaviconUrl(normalizedUrl),
           isOpenOption: true
         };
       } catch (error) {
