@@ -81,6 +81,8 @@
       this.docKeyDownHandler = null;
       this.docKeyUpHandler = null;
       this.focusShieldHandler = null;
+      this.focusRestoreFrame = null;
+      this.focusRestoreTimer = null;
       this.runtimeMessageHandler = null;
       this.storageChangeHandler = null;
       this.languageChangeHandler = null;
@@ -562,13 +564,53 @@
       }
     }
 
+    _placeShadowHostForFocus() {
+      const activeDialog = document.activeElement?.closest?.('dialog, [role="dialog"], [aria-modal="true"]');
+      const parent = activeDialog || document.body;
+      if (this.shadowHost && this.shadowHost.parentNode !== parent) {
+        parent.appendChild(this.shadowHost);
+      }
+    }
+
+    _focusSearchInput() {
+      if (this.isDestroyed || !this.isVisible || !this.searchInput) return;
+      if (this.shadowRoot?.activeElement !== this.searchInput) {
+        this.searchInput.focus();
+      }
+    }
+
+    _scheduleFocusRestore() {
+      queueMicrotask(() => this._focusSearchInput());
+      this.focusRestoreFrame = requestAnimationFrame(() => {
+        this.focusRestoreFrame = null;
+        this._focusSearchInput();
+      });
+      this.focusRestoreTimer = setTimeout(() => {
+        this.focusRestoreTimer = null;
+        this._focusSearchInput();
+      }, 0);
+    }
+
+    _cancelFocusRestore() {
+      if (this.focusRestoreFrame !== null && typeof cancelAnimationFrame === 'function') {
+        cancelAnimationFrame(this.focusRestoreFrame);
+      }
+      if (this.focusRestoreTimer !== null) {
+        clearTimeout(this.focusRestoreTimer);
+      }
+      this.focusRestoreFrame = null;
+      this.focusRestoreTimer = null;
+    }
+
     show() {
       if (this.isVisible) return;
 
       this.isVisible = true;
+      this._placeShadowHostForFocus();
       this.overlay.style.display = 'flex';
       this.searchInput.value = '';
-      this.searchInput.focus();
+      this._focusSearchInput();
+      this._scheduleFocusRestore();
       this.selectedIndex = -1;
       this._resetMouseActivation();
       this.loadSearchPreferences();
@@ -583,6 +625,7 @@
     hide() {
       if (!this.isVisible) return;
       this.isVisible = false; // 先置 false，阻止重复触发
+      this._cancelFocusRestore();
 
       // 如果是跳板页且用户未选择结果，直接关闭该标签页。
       // 关键：用 setTimeout 把 tabs.remove 推出当前 keydown 事件栈。
@@ -622,6 +665,7 @@
         clearTimeout(this.historyFetchTimer);
         this.historyFetchTimer = null;
       }
+      this._cancelFocusRestore();
 
       if (this.docKeyDownHandler) {
         document.removeEventListener('keydown', this.docKeyDownHandler, { capture: true });
