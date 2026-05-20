@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const {
   DEFAULT_SEARCH_PREFERENCES,
   ALLOWED_RESULTS_LIMITS,
+  normalizeResultsLimit,
   normalizeSearchPreferences
 } = require('../preferences.js');
 
@@ -32,6 +33,8 @@ test('non-boolean search preferences fall back to defaults', () => {
 
 test('resultsLimit accepts only allowed values', () => {
   for (const value of ALLOWED_RESULTS_LIMITS) {
+    assert.equal(normalizeResultsLimit(value), value);
+    assert.equal(normalizeResultsLimit(String(value)), value);
     assert.equal(normalizeSearchPreferences({ resultsLimit: value }).resultsLimit, value);
     assert.equal(normalizeSearchPreferences({ resultsLimit: String(value) }).resultsLimit, value);
   }
@@ -39,6 +42,7 @@ test('resultsLimit accepts only allowed values', () => {
 
 test('invalid resultsLimit falls back to default', () => {
   for (const value of [0, 5, 100, 'ten', null, undefined, NaN, true]) {
+    assert.equal(normalizeResultsLimit(value), DEFAULT_SEARCH_PREFERENCES.resultsLimit);
     assert.equal(
       normalizeSearchPreferences({ resultsLimit: value }).resultsLimit,
       DEFAULT_SEARCH_PREFERENCES.resultsLimit
