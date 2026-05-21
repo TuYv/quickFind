@@ -5,6 +5,8 @@
 ### 1.5.7
 - Search now uses Chrome's default search engine instead of a hardcoded Google URL.
 - Polish overlay action icons: the search action uses the same magnifier as the input, and direct-open URL actions use the target site's favicon when available.
+- Keep the overlay input focused on sites with aggressive host modals, so typing after opening Pounce still goes into the search box.
+- Keep the results-limit selector keyboard-friendly in Settings.
 - Clean up overlay CSS so synthetic action rows share the same selected-state treatment as normal results.
 
 ### 1.5.6
